@@ -1,17 +1,16 @@
 <?php
 
-namespace App\Application\Auth\Controllers;
+namespace App\Http\Controllers\Auth;
 
 use App\Application\Auth\Login\LoginCommand;
 use App\Application\Auth\Login\LoginHandler;
-use App\Shared\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use App\Http\Controllers\Controller;
+
 
 final class LoginController extends Controller
 {
-    use ApiResponse;
 
     public function __invoke(Request $request, LoginHandler $handler): JsonResponse
     {

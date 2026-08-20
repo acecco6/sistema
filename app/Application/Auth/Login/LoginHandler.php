@@ -25,6 +25,10 @@ final class LoginHandler
             throw new \RuntimeException('Credenciales inválidas.');
         }
 
+        if (!$user->isActive()) {
+            throw new \RuntimeException('Usuario inactivo.');
+        }
+
         if (!$this->hasher->check($command->password, $user->passwordHash())) {
             throw new \RuntimeException('Credenciales inválidas.');
         }

@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Application\Auth\Controllers;
+namespace App\Http\Controllers\Auth;
+
 
 use App\Application\Auth\Register\RegisterCommand;
 use App\Application\Auth\Register\RegisterHandler;
-use App\Shared\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use App\Http\Controllers\Controller;
+
 
 final class RegisterController extends Controller
 {
-    use ApiResponse;
 
     public function __invoke(Request $request, RegisterHandler $handler): JsonResponse
     {

@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Application\Users\Controllers;
+namespace App\Http\Controllers\Users;
 
-use App\Shared\Http\Responses\ApiResponse;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+
 
 final class ProfileController extends Controller
 {
-    use ApiResponse;
 
     public function __invoke(Request $request): JsonResponse
     {

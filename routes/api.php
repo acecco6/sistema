@@ -1,10 +1,12 @@
 <?php
 
-use Illuminate\Http\Request;
+
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Application\Auth\Controllers\LoginController;
-use App\Application\Auth\Controllers\LogoutController;
-use App\Application\Auth\Controllers\RegisterController;
+
 
 
 Route::prefix('auth')->group(function () {
@@ -19,6 +21,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('user')->group(function () {
-        Route::get('/', \App\Application\Users\Controllers\ProfileController::class);
+        Route::get('/', ProfileController::class);
     });
 });
