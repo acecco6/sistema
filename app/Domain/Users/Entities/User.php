@@ -2,7 +2,55 @@
 
 namespace App\Domain\Users\Entities;
 
-class User
+use App\Domain\Users\ValueObjects\Email;
+
+final class User
 {
-    // Código de tu entidad
+    public function __construct(
+        private readonly int $id,
+        private string $name,
+        private Email $email,
+        private string $passwordHash,
+        private bool $active,
+    ) {}
+
+    public function id(): int
+    {
+        return $this->id;
+    }
+
+    public function name(): string
+    {
+        return $this->name;
+    }
+
+    public function email(): Email
+    {
+        return $this->email;
+    }
+
+    public function passwordHash(): string
+    {
+        return $this->passwordHash;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function activate(): void
+    {
+        $this->active = true;
+    }
+
+    public function deactivate(): void
+    {
+        $this->active = false;
+    }
+
+    public function changeEmail(Email $email): void
+    {
+        $this->email = $email;
+    }
 }
