@@ -2,6 +2,8 @@
 
 namespace App\Domain\Clubs\Entities;
 
+use App\Domain\Clubs\Exceptions\ClubAlreadyInactiveException;
+
 final class Club
 {
     public function __construct(
@@ -32,6 +34,9 @@ final class Club
 
     public function deactivate(): void
     {
+        if (! $this->active) {
+            throw new ClubAlreadyInactiveException();
+        }
         $this->active = false;
     }
 

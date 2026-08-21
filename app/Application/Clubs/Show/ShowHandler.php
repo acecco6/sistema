@@ -2,8 +2,9 @@
 
 namespace App\Application\Clubs\Show;
 
+use App\Application\Clubs\DTOs\ClubDto;
+use App\Domain\Clubs\Exceptions\ClubNotFoundException;
 use App\Domain\Clubs\Repositories\ClubRepository;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class ShowHandler
 {
@@ -16,13 +17,9 @@ final class ShowHandler
         $club = $this->clubs->findById($command->id);
 
         if (!$club) {
-            throw new NotFoundHttpException('Club no encontrado');
+            throw new ClubNotFoundException($command->id);
         }
 
-        return [
-            'id' => $club->getId(),
-            'name' => $club->getName(),
-            'active' => $club->isActive(),
-        ];
+        return ClubDto::fromDomain($club)->toArray();
     }
 }

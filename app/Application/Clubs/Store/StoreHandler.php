@@ -2,6 +2,7 @@
 
 namespace App\Application\Clubs\Store;
 
+use App\Application\Clubs\DTOs\ClubDto;
 use App\Domain\Clubs\Entities\Club;
 use App\Domain\Clubs\Repositories\ClubRepository;
 
@@ -21,10 +22,6 @@ final class StoreHandler
 
         $club = $this->clubs->create($club);
 
-        return [
-            'id' => $club->getId(),
-            'name' => $club->getName(),
-            'active' => $club->isActive(),
-        ];
+        return ClubDto::fromDomain($club)->toArray();
     }
 }

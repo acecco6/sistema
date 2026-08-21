@@ -23,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TokenGenerator::class, SanctumTokenGenerator::class);
         $this->app->bind(PasswordHasher::class, LaravelPasswordHasher::class);
         $this->app->bind(ClubRepository::class, EloquentClubRepository::class);
+        $this->app->bind(\App\Domain\Branches\Repositories\BranchRepository::class, \App\Infrastructure\Persistence\EloquentBranchRepository::class);
     }
 
     /**

@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Application\Clubs\Update;
+namespace App\Application\Clubs\Desactivate;
 
 use App\Application\Clubs\DTOs\ClubDto;
 use App\Domain\Clubs\Exceptions\ClubNotFoundException;
 use App\Domain\Clubs\Repositories\ClubRepository;
 
-final class UpdateHandler
+final class DesactivateHandler
 {
     public function __construct(
         private ClubRepository $clubs,
     ) {}
 
-    public function handle(UpdateCommand $command): array
+    public function handle(DesactivateCommand $command): array
     {
         $club = $this->clubs->findById($command->id);
 
@@ -20,8 +20,7 @@ final class UpdateHandler
             throw new ClubNotFoundException($command->id);
         }
 
-        $club->changeName($command->name);
-        $club->changeActive($command->active);
+        $club->deactivate();
 
         $club = $this->clubs->update($club);
 

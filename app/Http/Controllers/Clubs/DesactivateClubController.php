@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers\Clubs;
 
-use App\Application\Clubs\Delete\DeleteCommand;
-use App\Application\Clubs\Delete\DeleteHandler;
+use App\Application\Clubs\Desactivate\DesactivateCommand;
+use App\Application\Clubs\Desactivate\DesactivateHandler;
 use App\Http\Controllers\Controller;
+use App\Shared\Exceptions\DomainException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class DeleteClubController  extends Controller
+class DesactivateClubController  extends Controller
 {
 
-    public function __invoke($id, DeleteHandler $handler)
+    public function __invoke($id, DesactivateHandler $handler)
     {
         try {
             if (!is_numeric($id)) {
                 throw new NotFoundHttpException('Club no encontrado');
             }
 
-            $club = $handler->handle(new DeleteCommand($id));
+            $club = $handler->handle(new DesactivateCommand($id));
 
             return $this->successResponse(
                 data: null,
@@ -28,6 +29,11 @@ class DeleteClubController  extends Controller
             return $this->errorResponse(
                 message: $e->getMessage(),
                 code: 404
+            );
+        } catch (DomainException $e) {
+            return $this->errorResponse(
+                message: $e->getMessage(),
+                code: $e->getCode()
             );
         } catch (\Exception $e) {
             return $this->errorResponse(

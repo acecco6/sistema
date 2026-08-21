@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Clubs;
 
 use App\Application\Clubs\Show\ShowCommand;
 use App\Application\Clubs\Show\ShowHandler;
+use App\Domain\Clubs\Exceptions\ClubNotFoundException;
 use App\Http\Controllers\Controller;
+use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 
 class ShowClubController extends Controller
 {
@@ -15,7 +17,7 @@ class ShowClubController extends Controller
     {
         try {
             if (!is_numeric($id)) {
-                throw new NotFoundHttpException('Club no encontrado');
+                throw new ClubNotFoundException();
             }
 
             $command = new ShowCommand($id);
@@ -25,10 +27,15 @@ class ShowClubController extends Controller
                 message: 'Club obtenido exitosamente',
                 code: 200
             );
-        } catch (NotFoundHttpException $e) {
+        } catch (DomainException $e) {
             return $this->errorResponse(
                 message: $e->getMessage(),
-                code: 404
+                code: $e->getCode()
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                message: 'Ocurrió un error al obtener el club',
+                code: 400
             );
         }
     }
