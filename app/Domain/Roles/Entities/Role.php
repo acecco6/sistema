@@ -10,17 +10,17 @@ final class Role
         private string $description,
     ) {}
 
-    public function id(): ?int
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function name(): string
+    public function getName(): string
     {
         return $this->name;
     }
 
-    public function description(): string
+    public function getDescription(): string
     {
         return $this->description;
     }

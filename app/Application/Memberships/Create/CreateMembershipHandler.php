@@ -84,6 +84,16 @@ final class CreateMembershipHandler
             throw new MembershipAlreadyExistsException();
         }
 
+        if (
+            $this->memberships->hasConflictingMembership(
+                userId: $command->userId,
+                clubId: $command->clubId,
+                branchId: $command->branchId,
+            )
+        ) {
+            throw new MembershipAlreadyExistsException();
+        }
+
         $membership = new Membership(
             id: null,
             userId: $command->userId,

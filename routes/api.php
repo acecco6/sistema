@@ -4,6 +4,9 @@
 use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController};
 use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
 use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
+use App\Http\Controllers\Memberships\ChangeMembershipBranchController;
+use App\Http\Controllers\Memberships\ChangeMembershipRoleController;
+use App\Http\Controllers\Memberships\ChangeMembershipStatusController;
 use App\Http\Controllers\Memberships\CreateMembershipController;
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -45,5 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('memberships')->group(function () {
         Route::post('', CreateMembershipController::class);
+        Route::patch('{id}/status', ChangeMembershipStatusController::class);
+        Route::patch('{id}/role', ChangeMembershipRoleController::class);
+        Route::patch('{id}/branche', ChangeMembershipBranchController::class);
     });
 });

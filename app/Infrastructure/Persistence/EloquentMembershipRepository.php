@@ -30,24 +30,6 @@ final class EloquentMembershipRepository implements MembershipRepository
         return $this->toDomain($eloquentMembership);
     }
 
-    public function update(Membership $membership): ?Membership
-    {
-        $eloquentMembership = EloquentMembership::find($membership->getId());
-
-        if (!$eloquentMembership) {
-            return null;
-        }
-
-        $eloquentMembership->update([
-            'user_id' => $membership->getUserId(),
-            'club_id' => $membership->getClubId(),
-            'role_id' => $membership->getRoleId(),
-            'branch_id' => $membership->getBranchId(),
-            'active' => $membership->isActive(),
-        ]);
-
-        return $this->toDomain($eloquentMembership);
-    }
 
     public function desactivate(int $id): ?Membership
     {
@@ -81,6 +63,72 @@ final class EloquentMembershipRepository implements MembershipRepository
         return $membership
             ? $this->toDomain($membership)
             : null;
+    }
+
+    public function hasConflictingMembership(int $userId, int $clubId, ?int $branchId, ?int $excludeMembershipId = null): bool
+    {
+        $query = EloquentMembership::query()
+            ->where('user_id', $userId)
+            ->where('club_id', $clubId);
+
+        if ($excludeMembershipId !== null) {
+            $query->where('id', '!=', $excludeMembershipId);
+        }
+
+        if ($branchId === null) {
+            // Si queremos scope global,
+            // no puede existir ninguna otra membership
+            // para ese user + club.
+            return $query->exists();
+        }
+
+        // Si queremos una branch concreta:
+        // no puede existir una global ni otra de esa misma branch.
+        return $query
+            ->where(function ($query) use ($branchId) {
+                $query
+                    ->whereNull('branch_id')
+                    ->orWhere('branch_id', $branchId);
+            })
+            ->exists();
+    }
+
+    public function changeStatus(int $membershipId): void
+    {
+        $membership = EloquentMembership::find($membershipId);
+
+        if (!$membership) {
+            return;
+        }
+
+        $membership->update([
+            'active' => !$membership->active,
+        ]);
+    }
+
+    public function changeRole(int $membershipId, int $roleId): void
+    {
+        EloquentMembership::where('id', $membershipId)->update([
+            'role_id' => $roleId,
+        ]);
+    }
+
+    public function update(Membership $membership): ?Membership
+    {
+        $eloquentMembership = EloquentMembership::find($membership->getId());
+
+        if (!$eloquentMembership) {
+            return null;
+        }
+
+        $eloquentMembership->update([
+            'user_id' => $membership->getUserId(),
+            'club_id' => $membership->getClubId(),
+            'role_id' => $membership->getRoleId(),
+            'branch_id' => $membership->getBranchId(),
+            'active' => $membership->isActive(),
+        ]);
+        return $this->toDomain($eloquentMembership);
     }
 
     private function toDomain(EloquentMembership $membership): Membership

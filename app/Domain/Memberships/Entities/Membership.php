@@ -2,6 +2,7 @@
 
 namespace App\Domain\Memberships\Entities;
 
+use App\Domain\Memberships\Exceptions\InvalidMembershipBranchChangeException;
 use App\Domain\Memberships\Exceptions\MembershipAlreadyInactiveException;
 
 final class Membership
@@ -50,14 +51,25 @@ final class Membership
         $this->roleId = $roleId;
     }
 
-    public function changeBranch(?int $branchId): void
+    public function changeStatus(): void
     {
-        $this->branchId = $branchId;
+        $this->active = ! $this->active;
     }
 
     public function activate(): void
     {
         $this->active = true;
+    }
+
+    public function changeBranch(?int $branchId): void
+    {
+        $currentBranchId = $this->branchId;
+
+        if ($currentBranchId !== null && $branchId !== null && $currentBranchId !== $branchId) {
+            throw new InvalidMembershipBranchChangeException();
+        }
+
+        $this->branchId = $branchId;
     }
 
     public function deactivate(): void
