@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('role_user', function (Blueprint $table) {
+        Schema::create('memberships', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('role_id')->constrained()->cascadeOnDelete();
             $table->foreignId('club_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->boolean('active')->default(true);
             $table->timestamps();
 
             // Evitar que el usuario tenga el mismo rol dos veces en el mismo contexto
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('role_user');
+        Schema::dropIfExists('memberships');
     }
 };
