@@ -9,10 +9,10 @@ trait ApiResponse
     protected function successResponse(mixed $data = null, string $message = 'Success', int $code = 200): JsonResponse
     {
         return response()->json([
+            'code' => $code,
             'status' => true,
             'message' => $message,
             'data'    => $data,
-            'code' => $code,
         ], $code);
     }
 

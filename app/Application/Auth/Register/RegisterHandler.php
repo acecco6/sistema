@@ -26,7 +26,7 @@ final class RegisterHandler
         $hashedPassword = $this->hasher->hash($command->password);
 
         $user = new User(
-            id: 0,
+            id: null,
             name: $command->name,
             email: $email,
             passwordHash: $hashedPassword,

@@ -7,14 +7,14 @@ use App\Domain\Users\ValueObjects\Email;
 final class User
 {
     public function __construct(
-        private readonly int $id,
+        private ?int $id,
         private string $name,
         private Email $email,
         private string $passwordHash,
         private bool $active,
     ) {}
 
-    public function id(): int
+    public function id(): ?int
     {
         return $this->id;
     }

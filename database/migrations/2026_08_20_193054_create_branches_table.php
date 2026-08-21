@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('club_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('address')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
