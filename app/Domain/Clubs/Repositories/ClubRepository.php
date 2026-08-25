@@ -18,4 +18,6 @@ interface ClubRepository
     public function update(Club $club): Club;
 
     public function delete(int $id): void;
+
+    public function findByUserMemberships(int $userId): array;
 }

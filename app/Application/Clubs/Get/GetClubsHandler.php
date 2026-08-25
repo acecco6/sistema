@@ -11,9 +11,9 @@ final class GetClubsHandler
         private ClubRepository $clubs
     ) {}
 
-    public function handle(): array
+    public function handle(GetClubsQuery $query): array
     {
-        $clubs = $this->clubs->findAll();
-        return array_map(fn($club) => ClubDto::fromDomain($club), $clubs);
+        $clubs = $this->clubs->findByUserMemberships($query->userId);
+        return array_map(ClubDto::fromDomain(...), $clubs);
     }
 }

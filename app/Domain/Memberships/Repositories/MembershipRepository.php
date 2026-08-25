@@ -14,4 +14,6 @@ interface MembershipRepository
     public function update(Membership $membership): ?Membership;
     public function hasConflictingMembership(int $userId, int $clubId, ?int $branchId, ?int $excludeMembershipId = null): bool;
     public function findActiveForScope(int $userId, int $clubId, ?int $branchId = null): ?Membership;
+    public function findActiveForClub(int $userId, int $clubId): array;
+    public function hasActiveMemberships(int $userId): bool;
 }

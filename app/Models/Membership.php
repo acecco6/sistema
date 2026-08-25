@@ -46,6 +46,6 @@ class Membership extends Model
 
     public function role()
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class, 'rol_id', 'id');
     }
 }

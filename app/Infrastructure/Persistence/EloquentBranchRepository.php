@@ -74,6 +74,43 @@ final class EloquentBranchRepository implements BranchRepository
         ]);
     }
 
+    public function findByClubAndScope(int $clubId, ?int $branchId = null): array
+    {
+        $query = EloquentBranch::query()
+            ->where('club_id', $clubId);
+
+        if ($branchId !== null) {
+            $query->where('id', $branchId);
+        }
+
+        return $query
+            ->get()
+            ->map(
+                fn(EloquentBranch $branch) =>
+                $this->toDomain($branch)
+            )
+            ->all();
+    }
+
+    public function findByClub(int $clubId): array
+    {
+        return EloquentBranch::query()
+            ->where('club_id', $clubId)
+            ->get()
+            ->map(fn(EloquentBranch $branch) => $this->toDomain($branch))
+            ->all();
+    }
+
+    public function findByClubAndBranchIds(int $clubId, array $branchIds): array
+    {
+        return EloquentBranch::query()
+            ->where('club_id', $clubId)
+            ->whereIn('id', $branchIds)
+            ->get()
+            ->map(fn(EloquentBranch $branch) => $this->toDomain($branch))
+            ->all();
+    }
+
     protected function toDomain(EloquentBranch $eloquentBranch): DomainBranch
     {
         return new DomainBranch(

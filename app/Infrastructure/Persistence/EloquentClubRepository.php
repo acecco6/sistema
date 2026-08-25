@@ -67,6 +67,22 @@ final class EloquentClubRepository implements ClubRepository
         ]);
     }
 
+    public function findByUserMemberships(int $userId): array
+    {
+        return EloquentClub::query()
+            ->whereHas('memberships', function ($query) use ($userId) {
+                $query
+                    ->where('user_id', $userId)
+                    ->where('active', true);
+            })
+            ->get()
+            ->map(
+                fn(EloquentClub $club) =>
+                $this->toDomain($club)
+            )
+            ->all();
+    }
+
     protected function toDomain(EloquentClub $eloquentClub): DomainClub
     {
         return new DomainClub(

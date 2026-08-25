@@ -155,6 +155,21 @@ final class EloquentMembershipRepository implements MembershipRepository
             : null;
     }
 
+
+    public function findActiveForClub(int $userId, int $clubId): array
+    {
+        return EloquentMembership::query()
+            ->where('user_id', $userId)
+            ->where('club_id', $clubId)
+            ->where('active', true)
+            ->get()
+            ->map(
+                fn(EloquentMembership $membership) =>
+                $this->toDomain($membership)
+            )
+            ->all();
+    }
+
     private function toDomain(EloquentMembership $membership): Membership
     {
         return new Membership(
@@ -165,5 +180,13 @@ final class EloquentMembershipRepository implements MembershipRepository
             branchId: $membership->branch_id,
             active: $membership->active,
         );
+    }
+
+    public function hasActiveMemberships(int $userId): bool
+    {
+        return EloquentMembership::query()
+            ->where('user_id', $userId)
+            ->where('active', true)
+            ->exists();
     }
 }

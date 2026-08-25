@@ -18,4 +18,10 @@ interface BranchRepository
     public function update(Branch $branch): Branch;
 
     public function delete(int $id): void;
+
+    public function findByClub(int $clubId): array;
+
+    public function findByClubAndBranchIds(int $clubId, array $branchIds): array;
+
+    public function findByClubAndScope(int $clubId, ?int $branchId = null,): array;
 }

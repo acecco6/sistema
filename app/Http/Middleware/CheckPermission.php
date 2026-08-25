@@ -7,6 +7,7 @@ use App\Domain\Branches\Exceptions\BranchNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Memberships\Exceptions\MembershipNotFoundException;
 use App\Domain\Memberships\Repositories\MembershipRepository;
+use App\Shared\Exceptions\AuthorizationDeniedException;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,53 +22,73 @@ final class CheckPermission
         private MembershipRepository $memberships,
     ) {}
 
-    public function handle(Request $request, Closure $next): Response
-    {
+    public function handle(
+        Request $request,
+        Closure $next
+    ): Response {
         $user = $request->user();
 
         if ($user === null) {
             abort(401);
         }
 
-        $permission = $request->route()?->getName();
+        $routeName = $request->route()?->getName();
 
-        if ($permission === null) {
+        if ($routeName === null) {
             throw new RuntimeException(
-                'La ruta no tiene un permiso asociado.'
+                'La ruta no tiene un nombre definido.'
             );
         }
 
-        [$resource] = explode('.', $permission);
+        /*
+     * Rutas de colección
+     */
+        if (str_ends_with($routeName, '.collection')) {
+            $this->authorizeCollection(
+                request: $request,
+                userId: $user->id,
+                routeName: $routeName,
+            );
+
+            return $next($request);
+        }
+
+        /*
+     * Caso especial de lectura de Club.
+     *
+     * Una membership limitada a una branch puede ver
+     * información general de su club.
+     */
+        if (
+            $routeName === 'club.view'
+            && $request->route('id') !== null
+        ) {
+            $this->authorization->authorizeInClub(
+                userId: $user->id,
+                clubId: (int) $request->route('id'),
+                permission: $routeName,
+            );
+
+            return $next($request);
+        }
+
+        [$resource] = explode('.', $routeName);
+
         $scope = match ($resource) {
             'club' => $this->resolveClubScope($request),
             'branch' => $this->resolveBranchScope($request),
             'membership' => $this->resolveMembershipScope($request),
 
-            default => function () use ($request, $resource) {
-                Log::error("Permiso no encontrado.", [
-                    'user_id' => $request->user()->id,
-                    'user_email' => $request->user()->email,
-                    'request' => [
-                        'method' => $request->method(),
-                        'uri' => $request->fullUrl(),
-                        'body' => $request->all(),
-                        'headers' => $request->headers->all(),
-                    ],
-                    'resource' => $resource,
-                    'route' => $request->route(),
-                ]);
-                throw new RuntimeException(
-                    "Error de sistema: Permiso no encontrado."
-                );
-            }
+            default => throw new RuntimeException(
+                "No existe un resolver para [{$resource}]."
+            ),
         };
-        // dd($scope, $permission, $user->id);
 
         $this->authorization->authorize(
             userId: $user->id,
             clubId: $scope['clubId'],
             branchId: $scope['branchId'],
-            permission: $permission,
+            permission: $routeName,
         );
 
         return $next($request);
@@ -195,5 +216,55 @@ final class CheckPermission
             'clubId' => $membership->getClubId(),
             'branchId' => $membership->getBranchId(),
         ];
+    }
+
+    private function authorizeCollection(
+        Request $request,
+        int $userId,
+        string $routeName,
+    ): void {
+        [$resource] = explode('.', $routeName);
+
+        match ($resource) {
+            'club' => $this->authorizeClubCollection(
+                userId: $userId,
+            ),
+
+            'branch' => $this->authorizeBranchCollection(
+                request: $request,
+                userId: $userId,
+            ),
+
+            default => throw new RuntimeException(
+                "No existe autorización de colección para [{$resource}]."
+            ),
+        };
+    }
+
+    private function authorizeClubCollection(int $userId): void
+    {
+        if (! $this->memberships->hasActiveMemberships($userId)) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function authorizeBranchCollection(Request $request, int $userId,): void
+    {
+        $clubId = $request->route('club_id');
+
+        if ($clubId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar el club.'
+            );
+        }
+
+        $membership = $this->memberships->findActiveForClub(
+            userId: $userId,
+            clubId: (int) $clubId,
+        );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
     }
 }

@@ -34,14 +34,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas de Clubes
     Route::prefix('clubs')->middleware('permission')->group(function () {
-        Route::get('', GetClubController::class)->name('club.view');
+        Route::get('', GetClubController::class)->name('club.collection');
         Route::get('/{id}', ShowClubController::class)->name('club.view');
         Route::post('', CreateClubController::class)->withoutMiddleware('permission')->name('club.create');
         Route::put('{id}', UpdateClubController::class)->name('club.update');
         Route::delete('{id}', DesactivateClubController::class)->name('club.deactivate');
 
         // Rutas de Sucursales por Club (Lectura y Creación)
-        Route::get('{club_id}/branches', GetBranchController::class)->name('branch.view');
+        Route::get('{club_id}/branches', GetBranchController::class)->name('branch.collection');
         Route::post('{club_id}/branches', CreateBranchController::class)->name('branch.create');
     });
 
