@@ -38,7 +38,7 @@ final class EloquentUserRepository implements UserRepository
             [
                 'name' => $user->name(),
                 'email' => $user->email()->value(),
-                'password' => $user->passwordHash(),
+                'password' => $user->password(),
                 'active' => $user->isActive(),
             ]
         );
@@ -50,7 +50,7 @@ final class EloquentUserRepository implements UserRepository
             id: $eloquentUser->id,
             name: $eloquentUser->name,
             email: new Email($eloquentUser->email),
-            passwordHash: $eloquentUser->password,
+            password: $eloquentUser->password,
             active: $eloquentUser->active // (o el campo que tengas en BD)
         );
     }

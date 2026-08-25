@@ -36,6 +36,7 @@ final class RegisterController extends Controller
                 code: 201
             );
         } catch (\RuntimeException $e) {
+            dd($e);
             return $this->errorResponse(
                 message: 'Ocurrió un error al registrar el usuario',
                 code: 400
