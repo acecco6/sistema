@@ -6,8 +6,8 @@ final class Role
 {
     public function __construct(
         private ?int $id,
-        private string $name,
-        private string $description,
+        private readonly string $name,
+        private readonly string $description
     ) {}
 
     public function getId(): ?int

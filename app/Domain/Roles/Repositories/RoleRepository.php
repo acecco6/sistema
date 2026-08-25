@@ -8,6 +8,10 @@ interface RoleRepository
 {
     public function findById(int $id): ?Role;
 
+    public function hasPermission(int $roleId, int $permissionId): bool;
+
+    public function attachPermission(int $roleId, int $permissionId): void;
+
     // public function findAll(): array;
 
     // public function save(Role $role): Role;

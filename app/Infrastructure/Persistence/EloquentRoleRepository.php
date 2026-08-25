@@ -28,6 +28,22 @@ final class EloquentRoleRepository implements RoleRepository
         return $this->toDomain($EloquentRole);
     }
 
+    public function hasPermission(int $roleId, int $permissionId): bool
+    {
+        return EloquentRole::query()
+            ->whereKey($roleId)
+            ->whereHas('permissions', function ($query) use ($permissionId) {
+                $query->whereKey($permissionId);
+            })
+            ->exists();
+    }
+
+    public function attachPermission(int $roleId, int $permissionId): void
+    {
+        $role = EloquentRole::findOrFail($roleId);
+        $role->permissions()->syncWithoutDetaching([$permissionId]);
+    }
+
 
     protected function toDomain(EloquentRole $EloquentRole): DomainRole
     {

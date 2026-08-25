@@ -11,45 +11,53 @@ use App\Http\Controllers\Memberships\CreateMembershipController;
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+// Rutas Publicas de Auth
 Route::prefix('auth')->group(function () {
-    Route::post('/login', LoginController::class);
-    Route::post('/register', RegisterController::class);
+    Route::post('/login', LoginController::class)->name('auth.login');
+    Route::post('/register', RegisterController::class)->name('auth.register');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
 
+
+    // Rutas de Auth
     Route::prefix('auth')->group(function () {
-        Route::post('/logout', LogoutController::class);
+        Route::post('/logout', LogoutController::class)->name('auth.logout');
     });
 
+
+    // Rutas de Usuario
     Route::prefix('user')->group(function () {
-        Route::get('/', ProfileController::class);
+        Route::get('/', ProfileController::class)->name('user.view');
     });
 
+
+    // Rutas de Clubes
     Route::prefix('clubs')->group(function () {
-        Route::get('', GetClubController::class);
-        Route::get('/{id}', ShowClubController::class);
-        Route::post('', CreateClubController::class);
-        Route::put('{id}', UpdateClubController::class);
-        Route::delete('{id}', DesactivateClubController::class);
+        Route::get('', GetClubController::class)->name('club.view');
+        Route::get('/{id}', ShowClubController::class)->name('club.view');
+        Route::post('', CreateClubController::class)->name('club.create');
+        Route::put('{id}', UpdateClubController::class)->name('club.update');
+        Route::delete('{id}', DesactivateClubController::class)->name('club.deactivate');
 
-        // Rutas anidadas de Sucursales por Club (Lectura y Creación)
-        Route::get('{club_id}/branches', GetBranchController::class);
-        Route::post('{club_id}/branches', CreateBranchController::class);
+        // Rutas de Sucursales por Club (Lectura y Creación)
+        Route::get('{club_id}/branches', GetBranchController::class)->name('branch.view');
+        Route::post('{club_id}/branches', CreateBranchController::class)->name('branch.create');
     });
 
-    // Rutas directas de Sucursales (Actualización, Visualización única, Eliminación)
+    // Rutas de Sucursales (Actualización, Visualización única, Eliminación)
     Route::prefix('branches')->group(function () {
-        Route::get('/{id}', ShowBranchController::class);
-        Route::put('/{id}', UpdateBranchController::class);
-        Route::delete('/{id}', DesactivateBranchController::class);
+        Route::get('/{id}', ShowBranchController::class)->name('branch.view');
+        Route::put('/{id}', UpdateBranchController::class)->name('branch.update');
+        Route::delete('/{id}', DesactivateBranchController::class)->name('branch.deactivate');
     });
 
 
+    // Rutas de Membresias
     Route::prefix('memberships')->group(function () {
-        Route::post('', CreateMembershipController::class);
-        Route::patch('{id}/status', ChangeMembershipStatusController::class);
-        Route::patch('{id}/role', ChangeMembershipRoleController::class);
-        Route::patch('{id}/branche', ChangeMembershipBranchController::class);
+        Route::post('', CreateMembershipController::class)->name('membership.create');
+        Route::patch('{id}/status', ChangeMembershipStatusController::class)->name('membership.change_status');
+        Route::patch('{id}/role', ChangeMembershipRoleController::class)->name('membership.change_role');
+        Route::patch('{id}/branche', ChangeMembershipBranchController::class)->name('membership.change_branch');
     });
 });
