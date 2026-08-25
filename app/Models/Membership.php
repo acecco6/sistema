@@ -13,7 +13,7 @@ class Membership extends Model
     protected $fillable = [
         'user_id',
         'club_id',
-        'role_id',
+        'rol_id',
         'branch_id',
         'active',
     ];
@@ -25,7 +25,7 @@ class Membership extends Model
             'branch_id' => 'integer',
             'user_id' => 'integer',
             'club_id' => 'integer',
-            'role_id' => 'integer',
+            'rol_id' => 'integer',
         ];
     }
 

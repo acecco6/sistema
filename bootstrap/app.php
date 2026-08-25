@@ -6,6 +6,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
+use App\Http\Middleware\CheckPermission;
+use App\Shared\Exceptions\DomainException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'permission' => CheckPermission::class,
+        ]);
+
         $middleware->redirectTo(
             guests: function (Request $request) {
                 if ($request->is('api/*')) {
@@ -48,6 +54,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 'Los datos proporcionados no son válidos.',
                 422,
                 $e->errors()
+            );
+        });
+        $exceptions->render(function (DomainException $e, Request $request) use ($responder) {
+            return $responder->triggerError(
+                $e->getMessage(),
+                $e->getCode()
             );
         });
 

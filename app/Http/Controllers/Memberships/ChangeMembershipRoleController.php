@@ -15,10 +15,10 @@ final class ChangeMembershipRoleController extends Controller
     public function __invoke($id, Request $request, ChangeRoleMembershipHandler $handler): JsonResponse
     {
         $validated = $request->validate([
-            'role_id' => 'required|integer',
+            'rol_id' => 'required|integer',
         ]);
 
-        $roleId = $validated['role_id'];
+        $roleId = $validated['rol_id'];
 
         try {
             $command = new ChangeRoleMembershipCommand($id, $roleId);

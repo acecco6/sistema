@@ -12,6 +12,8 @@ interface RoleRepository
 
     public function attachPermission(int $roleId, int $permissionId): void;
 
+    public function hasPermissionByName(int $roleId, string $permission): bool;
+
     // public function findAll(): array;
 
     // public function save(Role $role): Role;

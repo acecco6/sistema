@@ -22,7 +22,7 @@ final class EloquentMembershipRepository implements MembershipRepository
         $eloquentMembership = EloquentMembership::create([
             'user_id' => $membership->getUserId(),
             'club_id' => $membership->getClubId(),
-            'role_id' => $membership->getRoleId(),
+            'rol_id' => $membership->getRoleId(),
             'branch_id' => $membership->getBranchId(),
             'active' => $membership->isActive(),
         ]);
@@ -109,7 +109,7 @@ final class EloquentMembershipRepository implements MembershipRepository
     public function changeRole(int $membershipId, int $roleId): void
     {
         EloquentMembership::where('id', $membershipId)->update([
-            'role_id' => $roleId,
+            'rol_id' => $roleId,
         ]);
     }
 
@@ -124,11 +124,35 @@ final class EloquentMembershipRepository implements MembershipRepository
         $eloquentMembership->update([
             'user_id' => $membership->getUserId(),
             'club_id' => $membership->getClubId(),
-            'role_id' => $membership->getRoleId(),
+            'rol_id' => $membership->getRoleId(),
             'branch_id' => $membership->getBranchId(),
             'active' => $membership->isActive(),
         ]);
         return $this->toDomain($eloquentMembership);
+    }
+
+    public function findActiveForScope(int $userId, int $clubId, ?int $branchId = null): ?Membership
+    {
+        $query = EloquentMembership::query()
+            ->where('user_id', $userId)
+            ->where('club_id', $clubId)
+            ->where('active', true);
+
+        if ($branchId === null) {
+            $query->whereNull('branch_id');
+        } else {
+            $query->where(function ($query) use ($branchId) {
+                $query
+                    ->whereNull('branch_id')
+                    ->orWhere('branch_id', $branchId);
+            });
+        }
+
+        $membership = $query->first();
+
+        return $membership
+            ? $this->toDomain($membership)
+            : null;
     }
 
     private function toDomain(EloquentMembership $membership): Membership
@@ -137,7 +161,7 @@ final class EloquentMembershipRepository implements MembershipRepository
             id: $membership->id,
             userId: $membership->user_id,
             clubId: $membership->club_id,
-            roleId: $membership->role_id,
+            roleId: $membership->rol_id,
             branchId: $membership->branch_id,
             active: $membership->active,
         );

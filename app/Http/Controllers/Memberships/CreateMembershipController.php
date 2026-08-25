@@ -19,7 +19,7 @@ final class CreateMembershipController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|integer',
             'club_id' => 'required|integer',
-            'role_id' => 'required|integer',
+            'rol_id' => 'required|integer',
             'branch_id' => 'nullable|integer',
         ]);
 
@@ -27,7 +27,7 @@ final class CreateMembershipController extends Controller
             $command = new CreateMembershipCommand(
                 userId: $validated['user_id'],
                 clubId: $validated['club_id'],
-                roleId: $validated['role_id'],
+                roleId: $validated['rol_id'],
                 branchId: $validated['branch_id'] ?? null
             );
 

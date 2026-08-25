@@ -13,4 +13,5 @@ interface MembershipRepository
     public function changeRole(int $membershipId, int $roleId): void;
     public function update(Membership $membership): ?Membership;
     public function hasConflictingMembership(int $userId, int $clubId, ?int $branchId, ?int $excludeMembershipId = null): bool;
+    public function findActiveForScope(int $userId, int $clubId, ?int $branchId = null): ?Membership;
 }

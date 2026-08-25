@@ -44,6 +44,16 @@ final class EloquentRoleRepository implements RoleRepository
         $role->permissions()->syncWithoutDetaching([$permissionId]);
     }
 
+    public function hasPermissionByName(int $roleId, string $permission): bool
+    {
+        return EloquentRole::query()
+            ->whereKey($roleId)
+            ->whereHas('permissions', function ($query) use ($permission) {
+                $query->where('name', $permission);
+            })
+            ->exists();
+    }
+
 
     protected function toDomain(EloquentRole $EloquentRole): DomainRole
     {

@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('memberships', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('role_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('rol_id')->constrained()->cascadeOnDelete();
             $table->foreignId('club_id')->constrained()->cascadeOnDelete();
             $table->foreignId('branch_id')->nullable()->constrained()->cascadeOnDelete();
             $table->boolean('active')->default(true);
             $table->timestamps();
 
             // Evitar que el usuario tenga el mismo rol dos veces en el mismo contexto
-            $table->unique(['user_id', 'role_id', 'club_id', 'branch_id']);
+            $table->unique(['user_id', 'rol_id', 'club_id', 'branch_id']);
         });
     }
 

@@ -33,10 +33,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Rutas de Clubes
-    Route::prefix('clubs')->group(function () {
+    Route::prefix('clubs')->middleware('permission')->group(function () {
         Route::get('', GetClubController::class)->name('club.view');
         Route::get('/{id}', ShowClubController::class)->name('club.view');
-        Route::post('', CreateClubController::class)->name('club.create');
+        Route::post('', CreateClubController::class)->withoutMiddleware('permission')->name('club.create');
         Route::put('{id}', UpdateClubController::class)->name('club.update');
         Route::delete('{id}', DesactivateClubController::class)->name('club.deactivate');
 
@@ -46,7 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Rutas de Sucursales (Actualización, Visualización única, Eliminación)
-    Route::prefix('branches')->group(function () {
+    Route::prefix('branches')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowBranchController::class)->name('branch.view');
         Route::put('/{id}', UpdateBranchController::class)->name('branch.update');
         Route::delete('/{id}', DesactivateBranchController::class)->name('branch.deactivate');
@@ -54,7 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Rutas de Membresias
-    Route::prefix('memberships')->group(function () {
+    Route::prefix('memberships')->middleware('permission')->group(function () {
         Route::post('', CreateMembershipController::class)->name('membership.create');
         Route::patch('{id}/status', ChangeMembershipStatusController::class)->name('membership.change_status');
         Route::patch('{id}/role', ChangeMembershipRoleController::class)->name('membership.change_role');
