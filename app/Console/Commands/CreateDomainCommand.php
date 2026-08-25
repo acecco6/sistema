@@ -45,6 +45,7 @@ class CreateDomainCommand extends Command
 
         // Generar el archivo de la Entidad base
         $this->createEntity($domainName, $domainPath);
+        $this->createRepository($domainName, $domainPath);
 
         $this->info("¡Estructura del dominio '{$domainName}' creada con éxito!");
         return Command::SUCCESS;
@@ -63,6 +64,24 @@ class CreateDomainCommand extends Command
             "class {$entityName}\n" .
             "{\n" .
             "    // Código de tu entidad\n" .
+            "}\n";
+
+        File::put($entityPath, $content);
+    }
+
+    protected function createRepository($domainName, $domainPath)
+    {
+        // Quitar la 's' final para el nombre del archivo si es plural (opcional, ej: Clubs -> Club)
+        $entityName = rtrim($domainName, 's');
+
+        $entityPath = "{$domainPath}/Repositories/{$entityName}Repository.php";
+
+        // Contenido básico de la clase PHP
+        $content = "<?php\n\n" .
+            "namespace App\\Domain\\{$domainName}\\Repositories;\n\n" .
+            "class {$entityName}Repository\n" .
+            "{\n" .
+            "    // Código de tu repositorio\n" .
             "}\n";
 
         File::put($entityPath, $content);

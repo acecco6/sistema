@@ -258,12 +258,12 @@ final class CheckPermission
             );
         }
 
-        $membership = $this->memberships->findActiveForClub(
+        $memberships = $this->memberships->findActiveForClub(
             userId: $userId,
             clubId: (int) $clubId,
         );
 
-        if ($membership === null) {
+        if ($memberships === []) {
             throw new AuthorizationDeniedException();
         }
     }
