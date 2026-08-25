@@ -33,13 +33,27 @@ final class AuthorizationService
 
     public function canInClub(int $userId, int $clubId, string $permission): bool
     {
-        $membership = $this->memberships->findActiveForClub(userId: $userId, clubId: $clubId);
+        $memberships = $this->memberships->findActiveForClub(
+            userId: $userId,
+            clubId: $clubId,
+        );
 
-        if ($membership === null) {
+        if ($memberships === []) {
             return false;
         }
 
-        return $this->roles->hasPermissionByName(roleId: $membership->getRoleId(), permission: $permission);
+        foreach ($memberships as $membership) {
+            if (
+                $this->roles->hasPermissionByName(
+                    roleId: $membership->getRoleId(),
+                    permission: $permission,
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function authorizeInClub(int $userId, int $clubId, string $permission): void

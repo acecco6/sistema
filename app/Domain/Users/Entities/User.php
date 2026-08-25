@@ -10,7 +10,7 @@ final class User
         private ?int $id,
         private string $name,
         private Email $email,
-        private string $passwordHash,
+        private string $password,
         private bool $active,
     ) {}
 
@@ -29,9 +29,9 @@ final class User
         return $this->email;
     }
 
-    public function passwordHash(): string
+    public function password(): string
     {
-        return $this->passwordHash;
+        return $this->password;
     }
 
     public function isActive(): bool

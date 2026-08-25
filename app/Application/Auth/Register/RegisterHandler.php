@@ -29,7 +29,7 @@ final class RegisterHandler
             id: null,
             name: $command->name,
             email: $email,
-            passwordHash: $hashedPassword,
+            password: $hashedPassword,
             active: true
         );
 

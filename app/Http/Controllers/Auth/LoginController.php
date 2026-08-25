@@ -15,7 +15,7 @@ final class LoginController extends Controller
     public function __invoke(Request $request, LoginHandler $handler): JsonResponse
     {
         $validated = $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|email|exists:users,email',
             'password' => 'required|string',
         ]);
 

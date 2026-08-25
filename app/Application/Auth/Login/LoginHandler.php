@@ -22,15 +22,15 @@ final class LoginHandler
         $user = $this->users->findByEmail($email);
 
         if ($user === null) {
-            throw new \RuntimeException('Credenciales inválidas.');
+            throw new \RuntimeException('Credenciales inválidas.', 401);
         }
 
         if (!$user->isActive()) {
-            throw new \RuntimeException('Usuario inactivo.');
+            throw new \RuntimeException('Usuario inactivo.', 403);
         }
 
-        if (!$this->hasher->check($command->password, $user->passwordHash())) {
-            throw new \RuntimeException('Credenciales inválidas.');
+        if (!$this->hasher->check($command->password, $user->password())) {
+            throw new \RuntimeException('Credenciales inválidas.', 401);
         }
         return $this->tokenGenerator->generate($user->id(), $email->value());
     }
