@@ -8,18 +8,13 @@ use App\Domain\Clubs\Exceptions\ClubNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Clubs\UpdateClubRequest;
 
 class UpdateClubController extends Controller
 {
 
-    public function __invoke($id, Request $request, UpdateHandler $handler): JsonResponse
+    public function __invoke($id, UpdateClubRequest $request, UpdateHandler $handler): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'active' => 'nullable|boolean'
-        ]);
-
         try {
             if (!is_numeric($id)) {
                 throw new ClubNotFoundException();

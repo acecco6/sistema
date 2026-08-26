@@ -4,6 +4,7 @@
 use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController};
 use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
 use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
+use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\ChangeMembershipBranchController;
 use App\Http\Controllers\Memberships\ChangeMembershipRoleController;
 use App\Http\Controllers\Memberships\ChangeMembershipStatusController;
@@ -59,5 +60,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('{id}/status', ChangeMembershipStatusController::class)->name('membership.change_status');
         Route::patch('{id}/role', ChangeMembershipRoleController::class)->name('membership.change_role');
         Route::patch('{id}/branche', ChangeMembershipBranchController::class)->name('membership.change_branch');
+    });
+
+    // Rutas de Courts (Canchas)
+    Route::prefix('branches/{branch_id}/courts')->middleware('permission')->group(function () {
+        Route::get('', GetCourtController::class)->name('court.collection');
+        Route::post('', CreateCourtController::class)->name('court.create');
+    });
+
+    Route::prefix('courts')->middleware('permission')->group(function () {
+        Route::get('/{id}', ShowCourtController::class)->name('court.view');
+        Route::put('/{id}', UpdateCourtController::class)->name('court.update');
+        Route::delete('/{id}', DeactivateCourtController::class)->name('court.deactivate');
     });
 });

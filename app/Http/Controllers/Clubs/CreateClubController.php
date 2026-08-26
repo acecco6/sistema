@@ -6,20 +6,16 @@ use App\Application\Clubs\Store\StoreCommand;
 use App\Application\Clubs\Store\StoreHandler;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Clubs\CreateClubRequest;
 
 class CreateClubController extends Controller
 {
 
-    public function __invoke(Request $request, StoreHandler $handler): JsonResponse
+    public function __invoke(CreateClubRequest $request, StoreHandler $handler): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100'
-        ]);
-
         try {
             $command = new StoreCommand(
-                $validated['name']
+                $request->validated('name')
             );
 
             $handler->handle($command);

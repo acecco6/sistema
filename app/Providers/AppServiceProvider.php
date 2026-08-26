@@ -6,6 +6,8 @@ use App\Application\Auth\Contracts\PasswordHasher;
 use App\Application\Auth\Contracts\TokenGenerator;
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Clubs\Repositories\ClubRepository;
+use App\Domain\Courts\Repositories\CourtRepository;
+use App\Domain\Courts\Repositories\TipoCourtRepository;
 use App\Domain\Memberships\Repositories\MembershipRepository;
 use App\Domain\Permissions\Repositories\PermissionRepository;
 use App\Domain\Roles\Repositories\RoleRepository;
@@ -14,6 +16,8 @@ use App\Infrastructure\Auth\LaravelPasswordHasher;
 use App\Infrastructure\Auth\Sanctum\SanctumTokenGenerator;
 use App\Infrastructure\Persistence\EloquentBranchRepository;
 use App\Infrastructure\Persistence\EloquentClubRepository;
+use App\Infrastructure\Persistence\EloquentCourtRepository;
+use App\Infrastructure\Persistence\EloquentTipoCourtRepository;
 use App\Infrastructure\Persistence\EloquentMembershipRepository;
 use App\Infrastructure\Persistence\EloquentPermissionRepository;
 use App\Infrastructure\Persistence\EloquentRoleRepository;
@@ -35,6 +39,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(RoleRepository::class, EloquentRoleRepository::class);
         $this->app->bind(MembershipRepository::class, EloquentMembershipRepository::class);
         $this->app->bind(PermissionRepository::class, EloquentPermissionRepository::class);
+        $this->app->bind(CourtRepository::class, EloquentCourtRepository::class);
+        $this->app->bind(TipoCourtRepository::class, EloquentTipoCourtRepository::class);
     }
 
     /**

@@ -979,8 +979,12 @@ Jerarquía:
 
 ```text
 Club
- └── Branch
-      └── Court
+└── Branch
+    ├── Court
+    │   └── TipoCourt
+    │
+    └── IntervalTimeTipoCourt
+        └── TipoCourt
 ```
 
 Estructura prevista:
@@ -1087,24 +1091,18 @@ MySQL.
 
 Prioridad aproximada:
 
-1.  Corregir/revisar `authorizeBranchCollection()` porque
-    `findActiveForClub()` ahora devuelve `array`.
-2.  Ejecutar nuevamente toda la suite y confirmar que todos los tests
-    siguen verdes.
-3.  Revisar que ClubTest y BranchTest cubran correctamente los endpoints
-    actuales.
-4.  Crear módulo Courts.
-5.  Crear migration/model/entity/repository de Court.
-6.  Crear Application use cases de Court.
-7.  Agregar permisos `court.*`.
-8.  Extender autorización para resolver scope de Court.
-9.  Crear `CourtFactory`.
-10. Crear Feature Tests de Courts.
-11. Comenzar Reservations.
-12. Diseñar reglas para evitar reservas superpuestas.
-13. Introducir transacciones y concurrencia.
-14. Analizar índices MySQL y consultas con `EXPLAIN`.
-15. Más adelante evaluar Unit Tests puros del Domain además de Feature
+1.  Crear módulo Courts.
+2.  Crear migration/model/entity/repository de Court.
+3.  Crear Application use cases de Court.
+4.  Agregar permisos `court.*`.
+5.  Extender autorización para resolver scope de Court.
+6.  Crear `CourtFactory`.
+7.  Crear Feature Tests de Courts.
+8.  Comenzar Reservations.
+9.  Diseñar reglas para evitar reservas superpuestas.
+10. Introducir transacciones y concurrencia.
+11. Analizar índices MySQL y consultas con `EXPLAIN`.
+12. Más adelante evaluar Unit Tests puros del Domain además de Feature
     Tests.
 
 ---

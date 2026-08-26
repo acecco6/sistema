@@ -5,6 +5,8 @@ namespace App\Http\Middleware;
 use App\Application\Authorization\AuthorizationService;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
+use App\Domain\Courts\Exceptions\CourtNotFoundException;
+use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Memberships\Exceptions\MembershipNotFoundException;
 use App\Domain\Memberships\Repositories\MembershipRepository;
 use App\Shared\Exceptions\AuthorizationDeniedException;
@@ -20,6 +22,7 @@ final class CheckPermission
         private AuthorizationService $authorization,
         private BranchRepository $branches,
         private MembershipRepository $memberships,
+        private CourtRepository $courts,
     ) {}
 
     public function handle(
@@ -78,6 +81,7 @@ final class CheckPermission
             'club' => $this->resolveClubScope($request),
             'branch' => $this->resolveBranchScope($request),
             'membership' => $this->resolveMembershipScope($request),
+            'court' => $this->resolveCourtScope($request),
 
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
@@ -218,6 +222,48 @@ final class CheckPermission
         ];
     }
 
+    private function resolveCourtScope(Request $request): array
+    {
+        /*
+         * POST /branches/{branch_id}/courts
+         */
+        $branchId = $request->route('branch_id');
+        if ($branchId !== null) {
+            $branch = $this->branches->findById((int) $branchId);
+            if ($branch === null) {
+                throw new BranchNotFoundException();
+            }
+
+            return [
+                'clubId' => $branch->getClubId(),
+                'branchId' => $branch->getId(),
+            ];
+        }
+
+        /*
+         * GET, PUT, DELETE /courts/{id}
+         */
+        $courtId = $request->route('id');
+        if ($courtId === null) {
+            throw new RuntimeException('No se pudo determinar la cancha.');
+        }
+
+        $court = $this->courts->findById((int) $courtId);
+        if ($court === null) {
+            throw new CourtNotFoundException((int) $courtId);
+        }
+
+        $branch = $this->branches->findById($court->getBranchId());
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return [
+            'clubId' => $branch->getClubId(),
+            'branchId' => $branch->getId(),
+        ];
+    }
+
     private function authorizeCollection(
         Request $request,
         int $userId,
@@ -231,6 +277,11 @@ final class CheckPermission
             ),
 
             'branch' => $this->authorizeBranchCollection(
+                request: $request,
+                userId: $userId,
+            ),
+
+            'court' => $this->authorizeCourtCollection(
                 request: $request,
                 userId: $userId,
             ),
@@ -264,6 +315,32 @@ final class CheckPermission
         );
 
         if ($memberships === []) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function authorizeCourtCollection(Request $request, int $userId): void
+    {
+        $branchId = $request->route('branch_id');
+
+        if ($branchId === null) {
+            throw new RuntimeException('No se pudo determinar la sucursal para listar canchas.');
+        }
+
+        $branch = $this->branches->findById((int) $branchId);
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        // Verifica membresía para el branch (ya sea global o específica del branch)
+        $membership = $this->memberships->findActiveForScope(
+            userId: $userId,
+            clubId: $branch->getClubId(),
+            branchId: $branch->getId()
+        );
+
+        if ($membership === null) {
             throw new AuthorizationDeniedException();
         }
     }

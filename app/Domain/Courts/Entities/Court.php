@@ -44,6 +44,13 @@ final class Court
         return $this;
     }
 
+    public function setTipoCourtId(int $tipoCourtId): self
+    {
+        $this->tipoCourtId = $tipoCourtId;
+
+        return $this;
+    }
+
     public function activate(): self
     {
         $this->active = true;

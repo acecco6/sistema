@@ -27,6 +27,12 @@ final class RolePermissionSeeder extends Seeder
                 'membership.change_status',
                 'membership.change_role',
                 'membership.change_branch',
+
+                'court.collection',
+                'court.view',
+                'court.create',
+                'court.update',
+                'court.deactivate',
             ],
 
             'Manager' => [
@@ -39,11 +45,19 @@ final class RolePermissionSeeder extends Seeder
                 'membership.create',
                 'membership.change_status',
                 'membership.change_branch',
+
+                'court.collection',
+                'court.view',
+                'court.create',
+                'court.update',
             ],
 
             'Employee' => [
                 'club.view',
                 'branch.view',
+                
+                'court.collection',
+                'court.view',
             ],
         ];
 

@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             PermissionSeeder::class,
             RolePermissionSeeder::class,
+            TipoCourtSeeder::class,
+            AlejoDemoSeeder::class,
+            MassiveDemoDataSeeder::class,
         ]);
     }
 }

@@ -7,18 +7,13 @@ use App\Application\Memberships\ChangeBranche\ChangeMembershipBranchHandler;
 use App\Http\Controllers\Controller;
 use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
+use App\Http\Requests\Memberships\ChangeMembershipBranchRequest;
 
 final class ChangeMembershipBranchController extends Controller
 {
-    public function __invoke($id, Request $request, ChangeMembershipBranchHandler $handler): JsonResponse
+    public function __invoke($id, ChangeMembershipBranchRequest $request, ChangeMembershipBranchHandler $handler): JsonResponse
     {
-        $validated = $request->validate([
-            'branch_id' => 'nullable|integer',
-        ]);
-
-        $branchId = $validated['branch_id'] ?? null;
+        $branchId = $request->integer('branch_id') ?: null;
 
         try {
             $command = new ChangeMembershipBranchCommand($id, $branchId);

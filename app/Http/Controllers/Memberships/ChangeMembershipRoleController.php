@@ -7,18 +7,13 @@ use App\Application\Memberships\ChangeRole\ChangeRoleMembershipHandler;
 use App\Http\Controllers\Controller;
 use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
+use App\Http\Requests\Memberships\ChangeMembershipRoleRequest;
 
 final class ChangeMembershipRoleController extends Controller
 {
-    public function __invoke($id, Request $request, ChangeRoleMembershipHandler $handler): JsonResponse
+    public function __invoke($id, ChangeMembershipRoleRequest $request, ChangeRoleMembershipHandler $handler): JsonResponse
     {
-        $validated = $request->validate([
-            'rol_id' => 'required|integer',
-        ]);
-
-        $roleId = $validated['rol_id'];
+        $roleId = $request->integer('rol_id');
 
         try {
             $command = new ChangeRoleMembershipCommand($id, $roleId);

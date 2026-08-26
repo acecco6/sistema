@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Court extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'branch_id',
         'tipo_court_id',
@@ -18,7 +21,7 @@ class Court extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function tipo_court()
+    public function tipoCourt()
     {
         return $this->belongsTo(TipoCourt::class);
     }

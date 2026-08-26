@@ -7,19 +7,12 @@ use App\Application\Branches\Store\StoreHandler;
 use App\Http\Controllers\Controller;
 use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Branches\CreateBranchRequest;
 
 class CreateBranchController extends Controller
 {
-    public function __invoke(int $clubId, Request $request, StoreHandler $handler): JsonResponse
+    public function __invoke(int $clubId, CreateBranchRequest $request, StoreHandler $handler): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'address' => 'nullable|string|max:255',
-            'opening_time' => 'nullable|date_format:H:i:s,H:i',
-            'closing_time' => 'nullable|date_format:H:i:s,H:i',
-        ]);
-
         try {
             $command = new StoreCommand(
                 clubId: $clubId,

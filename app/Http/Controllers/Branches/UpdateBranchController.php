@@ -7,20 +7,12 @@ use App\Application\Branches\Update\UpdateHandler;
 use App\Http\Controllers\Controller;
 use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Branches\UpdateBranchRequest;
 
 class UpdateBranchController extends Controller
 {
-    public function __invoke(int $id, Request $request, UpdateHandler $handler): JsonResponse
+    public function __invoke(int $id, UpdateBranchRequest $request, UpdateHandler $handler): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'address' => 'nullable|string|max:255',
-            'opening_time' => 'nullable|date_format:H:i:s,H:i',
-            'closing_time' => 'nullable|date_format:H:i:s,H:i',
-            'active' => 'nullable|boolean'
-        ]);
-
         try {
             $command = new UpdateCommand(
                 id: $id,

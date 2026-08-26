@@ -24,6 +24,12 @@ final class PermissionSeeder extends Seeder
             ['name' => 'membership.change_status', 'description' => 'Activar o desactivar membresías'],
             ['name' => 'membership.change_role', 'description' => 'Cambiar el rol de una membresía'],
             ['name' => 'membership.change_branch', 'description' => 'Cambiar el alcance de sucursal de una membresía'],
+
+            ['name' => 'court.collection', 'description' => 'Ver lista de canchas de una sucursal'],
+            ['name' => 'court.view', 'description' => 'Ver una cancha específica'],
+            ['name' => 'court.create', 'description' => 'Crear canchas'],
+            ['name' => 'court.update', 'description' => 'Modificar canchas'],
+            ['name' => 'court.deactivate', 'description' => 'Desactivar canchas'],
         ];
 
         foreach ($permissions as $permission) {

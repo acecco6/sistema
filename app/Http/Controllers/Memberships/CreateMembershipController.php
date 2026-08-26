@@ -7,28 +7,19 @@ use App\Application\Memberships\Create\CreateMembershipHandler;
 use App\Http\Controllers\Controller;
 use App\Shared\Exceptions\DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Memberships\CreateMembershipRequest;
 
 final class CreateMembershipController extends Controller
 {
 
-    public function __invoke(Request $request, CreateMembershipHandler $handler): JsonResponse
+    public function __invoke(CreateMembershipRequest $request, CreateMembershipHandler $handler): JsonResponse
     {
-
-
-        $validated = $request->validate([
-            'user_id' => 'required|integer',
-            'club_id' => 'required|integer',
-            'rol_id' => 'required|integer',
-            'branch_id' => 'nullable|integer',
-        ]);
-
         try {
             $command = new CreateMembershipCommand(
-                userId: $validated['user_id'],
-                clubId: $validated['club_id'],
-                roleId: $validated['rol_id'],
-                branchId: $validated['branch_id'] ?? null
+                userId: $request->integer('user_id'),
+                clubId: $request->integer('club_id'),
+                roleId: $request->integer('rol_id'),
+                branchId: $request->integer('branch_id') ?: null
             );
 
             $handler->handle($command);
