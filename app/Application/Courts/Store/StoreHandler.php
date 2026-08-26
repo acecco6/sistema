@@ -33,11 +33,11 @@ final class StoreHandler
         }
 
         $court = new Court(
-            id:          0,
-            branchId:    $command->branchId,
+            id: null,
+            branchId: $command->branchId,
             tipoCourtId: $command->tipoCourtId,
-            name:        $command->name,
-            active:      true,
+            name: $command->name,
+            active: true,
         );
 
         $court = $this->courts->save($court);

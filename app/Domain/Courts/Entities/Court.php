@@ -5,7 +5,7 @@ namespace App\Domain\Courts\Entities;
 final class Court
 {
     public function __construct(
-        private int $id,
+        private ?int $id,
         private int $branchId,
         private int $tipoCourtId,
         private string $name,
