@@ -18,6 +18,9 @@ final class BranchFactory extends Factory
         return [
             'club_id' => Club::factory(),
             'name' => fake()->company(),
+            'address' => fake()->company(),
+            'opening_time' => '08:00',
+            'closing_time' => '23:00',
             'active' => true,
         ];
     }

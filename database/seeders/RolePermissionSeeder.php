@@ -75,6 +75,18 @@ final class RolePermissionSeeder extends Seeder
                 'court_promotion.create',
                 'court_promotion.update',
                 'court_promotion.change_status',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Reservations
+                |--------------------------------------------------------------------------
+                | 1. Crear reservación
+                | 2. Ver reservaciones
+                | 3. Cancelar reservación
+                */
+                'reservation.create',
+                'reservation.view',
+                'reservation.cancel',
             ],
 
 
@@ -120,6 +132,18 @@ final class RolePermissionSeeder extends Seeder
                 'court_promotion.view',
                 'court_promotion.create',
                 'court_promotion.update',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Reservations
+                |--------------------------------------------------------------------------
+                | 1. Crear reservación
+                | 2. Ver reservaciones
+                | 3. Cancelar reservación
+                */
+                'reservation.create',
+                'reservation.view',
+                'reservation.cancel',
             ],
 
 
@@ -151,6 +175,18 @@ final class RolePermissionSeeder extends Seeder
 
                 // Promotions
                 'court_promotion.view',
+
+                /*
+                |--------------------------------------------------------------------------
+                | Reservations
+                |--------------------------------------------------------------------------
+                | 1. Crear reservación
+                | 2. Ver reservaciones
+                | 3. Cancelar reservación
+                */
+                'reservation.create',
+                'reservation.view',
+                'reservation.cancel',
             ],
         ];
 

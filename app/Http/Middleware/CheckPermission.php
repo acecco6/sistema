@@ -12,6 +12,8 @@ use App\Domain\Memberships\Repositories\MembershipRepository;
 use App\Domain\Pricing\Exceptions\CourtPriceNotFoundException;
 use App\Domain\Pricing\Exceptions\CourtPriceRuleNotFoundException;
 use App\Domain\Pricing\Repositories\CourtPriceRepository;
+use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
+use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Shared\Exceptions\AuthorizationDeniedException;
 use Closure;
 use Illuminate\Http\Request;
@@ -27,6 +29,7 @@ final class CheckPermission
         private MembershipRepository $memberships,
         private CourtRepository $courts,
         private CourtPriceRepository $prices,
+        private ReservationRepository $reservations,
     ) {}
 
     public function handle(
@@ -86,12 +89,9 @@ final class CheckPermission
             'branch' => $this->resolveBranchScope($request),
             'membership' => $this->resolveMembershipScope($request),
             'court' => $this->resolveCourtScope($request),
-
             'court_price' => $this->resolveCourtPriceScope($request),
-
-            'court_promotion' =>
-            $this->resolveCourtPromotionScope($request),
-
+            'court_promotion' => $this->resolveCourtPromotionScope($request),
+            'reservation' => $this->resolveReservationScope($request),
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
             ),
@@ -273,11 +273,8 @@ final class CheckPermission
         ];
     }
 
-    private function authorizeCollection(
-        Request $request,
-        int $userId,
-        string $routeName,
-    ): void {
+    private function authorizeCollection(Request $request, int $userId, string $routeName): void
+    {
         [$resource] = explode('.', $routeName);
 
         match ($resource) {
@@ -295,15 +292,11 @@ final class CheckPermission
                 userId: $userId,
             ),
 
-            'court_price' => $this->authorizeCourtPriceCollection(
-                $request,
-                $userId
-            ),
+            'court_price' => $this->authorizeCourtPriceCollection($request, $userId),
 
-            'court_promotion' => $this->authorizeCourtPromotionCollection(
-                $request,
-                $userId
-            ),
+            'court_promotion' => $this->authorizeCourtPromotionCollection($request, $userId),
+
+            'reservation' => $this->authorizeReservationCollection($request, $userId),
 
             default => throw new RuntimeException(
                 "No existe autorización de colección para [{$resource}]."
@@ -548,6 +541,145 @@ final class CheckPermission
             throw new BranchNotFoundException();
         }
 
+        $membership = $this->memberships
+            ->findActiveForScope(
+                userId: $userId,
+                clubId: $branch->getClubId(),
+                branchId: $branch->getId(),
+            );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function resolveReservationScope(Request $request): array
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE
+        |--------------------------------------------------------------------------
+        |
+        | POST /courts/{court_id}/reservations
+        |
+        | Todavía no existe Reservation.
+        | El scope se obtiene desde la Court.
+        |
+        */
+
+        $courtId = $request->route('court_id');
+
+        if ($courtId !== null) {
+            $court = $this->courts->findById(
+                (int) $courtId
+            );
+
+            if ($court === null) {
+                throw new CourtNotFoundException();
+            }
+
+            $branch = $this->branches->findById(
+                $court->getBranchId()
+            );
+
+            if ($branch === null) {
+                throw new BranchNotFoundException();
+            }
+
+            return [
+                'clubId' => $branch->getClubId(),
+                'branchId' => $branch->getId(),
+            ];
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VIEW / CANCEL
+        |--------------------------------------------------------------------------
+        |
+        | GET   /reservations/{id}
+        | PATCH /reservations/{id}/cancel
+        |
+        | La Reservation ya existe.
+        |
+        */
+
+        $reservationId = $request->route('id');
+
+        if ($reservationId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar la reserva.'
+            );
+        }
+
+        $reservation = $this->reservations->findById(
+            (int) $reservationId
+        );
+
+        if ($reservation === null) {
+            throw new ReservationNotFoundException();
+        }
+
+        $court = $this->courts->findById(
+            $reservation->getCourtId()
+        );
+
+        if ($court === null) {
+            throw new CourtNotFoundException();
+        }
+
+        $branch = $this->branches->findById(
+            $court->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return [
+            'clubId' => $branch->getClubId(),
+            'branchId' => $branch->getId(),
+        ];
+    }
+
+    private function authorizeReservationCollection(Request $request, int $userId): void
+    {
+        /*
+        * GET /courts/{court_id}/reservations
+        */
+
+        $courtId = $request->route('court_id');
+
+        if ($courtId === null) {
+            throw new \RuntimeException(
+                'No se pudo determinar la cancha.'
+            );
+        }
+
+        $court = $this->courts->findById(
+            (int) $courtId
+        );
+
+        if ($court === null) {
+            throw new CourtNotFoundException();
+        }
+
+        $branch = $this->branches->findById(
+            $court->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        /*
+        * Collection no busca reservation.collection
+        * como permiso real.
+        *
+        * Solamente valida que el usuario tenga scope
+        * sobre esta Branch.
+        */
         $membership = $this->memberships
             ->findActiveForScope(
                 userId: $userId,

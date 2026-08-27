@@ -13,4 +13,8 @@ interface CourtRepository
     public function save(Court $court): Court;
 
     public function update(Court $court): Court;
+
+    public function findActiveByBranchAndTipo(int $branchId, int $tipoCourtId): array;
+
+    public function findByIdForUpdate(int $id): ?Court;
 }

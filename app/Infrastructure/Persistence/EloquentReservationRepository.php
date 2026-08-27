@@ -164,6 +164,19 @@ final class EloquentReservationRepository implements ReservationRepository
         );
     }
 
+    public function findBlockingReservationsBetween(int $courtId, DateTimeImmutable $startsAt, DateTimeImmutable $endsAt): array
+    {
+        return EloquentReservation::query()
+            ->where('court_id', $courtId)
+            ->whereIn('status', [ReservationStatus::PENDING->value, ReservationStatus::CONFIRMED->value])
+            ->where('starts_at', '<', $endsAt->format('Y-m-d H:i:s'))
+            ->where('ends_at', '>', $startsAt->format('Y-m-d H:i:s'))
+            ->orderBy('starts_at')
+            ->get()
+            ->map(fn(EloquentReservation $reservation) => $this->toDomain($reservation))
+            ->all();
+    }
+
     private function toDomainSegment(EloquentReservationPriceSegment $segment): DomainReservationPriceSegment
     {
         return new DomainReservationPriceSegment(

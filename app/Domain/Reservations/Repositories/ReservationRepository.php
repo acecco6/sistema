@@ -36,4 +36,6 @@ interface ReservationRepository
      * @return ReservationPriceSegment[]
      */
     public function findPriceSegments(int $reservationId): array;
+
+    public function findBlockingReservationsBetween(int $courtId, DateTimeImmutable $startsAt, DateTimeImmutable $endsAt): array;
 }
