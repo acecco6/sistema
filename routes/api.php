@@ -1,50 +1,15 @@
 <?php
 
 
-use App\Http\Controllers\Auth\{
-    LoginController,
-    LogoutController,
-    RegisterController
-};
-use App\Http\Controllers\Branches\{
-    CreateBranchController,
-    DesactivateBranchController,
-    GetBranchController,
-    ShowBranchController,
-    UpdateBranchController
-};
-use App\Http\Controllers\Clubs\{
-    CreateClubController,
-    DesactivateClubController,
-    GetClubController,
-    ShowClubController,
-    UpdateClubController
-};
-use App\Http\Controllers\Courts\{
-    CreateCourtController,
-    DeactivateCourtController,
-    GetCourtController,
-    ShowCourtController,
-    UpdateCourtController
-};
-use App\Http\Controllers\Memberships\{
-    ChangeMembershipBranchController,
-    ChangeMembershipRoleController,
-    ChangeMembershipStatusController,
-    CreateMembershipController
-};
-use App\Http\Controllers\Pricing\{
-    ChangeCourtPriceStatusController,
-    ChangeCourtPromotionStatusController,
-    CreateCourtPriceController,
-    CreateCourtPromotionController,
-    GetCourtPriceController,
-    GetCourtPromotionController,
-    ShowCourtPriceController,
-    ShowCourtPromotionController,
-    UpdateCourtPriceController,
-    UpdateCourtPromotionController
-};
+use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController};
+use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
+use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
+use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
+use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
+use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
+use App\Http\Controllers\Reservations\BookCourtAuthenticatedController;
+use App\Http\Controllers\Reservations\BookCourtGuestController;
+use App\Http\Controllers\Reservations\CreateReservationController;
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class)->name('auth.login');
     Route::post('/register', RegisterController::class)->name('auth.register');
+});
+
+// Rutas Publicas de Reservas para Invitados
+Route::prefix('public')->group(function () {
+    Route::post('courts/{court_id}/book', BookCourtGuestController::class)->name('reservation.guest.create');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -139,5 +109,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', ShowCourtPromotionController::class)->name('court_promotion.view');
         Route::put('/{id}', UpdateCourtPromotionController::class)->name('court_promotion.update');
         Route::patch('/{id}/status', ChangeCourtPromotionStatusController::class)->name('court_promotion.change_status');
+    });
+
+
+    // Rutas de Reservas por Cancha (Creación para personal)
+    Route::prefix('courts/{court_id}/reservations')->middleware('permission')->group(function () {
+        Route::post('', CreateReservationController::class)->name('reservation.create');
+    });
+
+    // Rutas de Reservas por Cancha (Creación para usuarios autenticados)
+    Route::prefix('courts/{court_id}/reservations')->group(function () {
+        Route::post('book', BookCourtAuthenticatedController::class)->name('reservation.customer.create');
     });
 });

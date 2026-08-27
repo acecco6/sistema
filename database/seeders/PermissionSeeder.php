@@ -39,6 +39,8 @@ final class PermissionSeeder extends Seeder
             ['name' => 'court_promotion.create', 'description' => 'Crear promociones de canchas'],
             ['name' => 'court_promotion.update', 'description' => 'Modificar promociones de canchas'],
             ['name' => 'court_promotion.change_status', 'description' => 'Activar o desactivar promociones de canchas'],
+
+            ['name' => 'reservation.create', 'description' => 'Crear reservas'],
         ];
 
         foreach ($permissions as $permission) {
