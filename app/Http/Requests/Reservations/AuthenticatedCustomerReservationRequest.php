@@ -38,6 +38,8 @@ class AuthenticatedCustomerReservationRequest extends FormRequest
                 'string',
                 'max:1000',
             ],
+
+            'confirmed' => ['prohibited'],
         ];
     }
 }

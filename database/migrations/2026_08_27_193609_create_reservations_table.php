@@ -14,17 +14,13 @@ return new class extends Migration
         Schema::create('reservations', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('court_id')
-                ->constrained('courts');
+            $table->foreignId('court_id')->constrained('courts');
 
             /*
              * Cliente registrado al que pertenece la reserva.
              * NULL si es un invitado.
              */
-            $table->foreignId('customer_user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->foreignId('customer_user_id')->nullable()->constrained('users')->nullOnDelete();
 
             /*
              * Usuario que creó la reserva.
@@ -42,14 +38,11 @@ return new class extends Migration
             /*
              * Datos del invitado.
              */
-            $table->string('guest_name', 100)
-                ->nullable();
+            $table->string('guest_name', 100)->nullable();
 
-            $table->string('guest_email', 150)
-                ->nullable();
+            $table->string('guest_email', 150)->nullable();
 
-            $table->string('guest_phone', 30)
-                ->nullable();
+            $table->string('guest_phone', 30)->nullable();
 
             /*
              * Período reservado.
@@ -76,14 +69,13 @@ return new class extends Migration
             /*
              * Token público para clientes sin autenticación.
              */
-            $table->uuid('public_token')
-                ->unique();
+            $table->uuid('public_token')->unique();
 
-            $table->text('notes')
-                ->nullable();
+            $table->text('notes')->nullable();
 
-            $table->timestamp('cancelled_at')
-                ->nullable();
+            $table->timestamp('cancelled_at')->nullable();
+
+            $table->timestamp('expires_at')->nullable();
 
             $table->timestamps();
 

@@ -83,10 +83,12 @@ final class RolePermissionSeeder extends Seeder
                 | 1. Crear reservación
                 | 2. Ver reservaciones
                 | 3. Cancelar reservación
+                | 4. Confirmar reservación
                 */
                 'reservation.create',
                 'reservation.view',
                 'reservation.cancel',
+                'reservation.confirm',
             ],
 
 
@@ -140,10 +142,13 @@ final class RolePermissionSeeder extends Seeder
                 | 1. Crear reservación
                 | 2. Ver reservaciones
                 | 3. Cancelar reservación
+                | 4. Confirmar reservación
                 */
                 'reservation.create',
                 'reservation.view',
                 'reservation.cancel',
+                'reservation.confirm',
+
             ],
 
 
@@ -183,10 +188,13 @@ final class RolePermissionSeeder extends Seeder
                 | 1. Crear reservación
                 | 2. Ver reservaciones
                 | 3. Cancelar reservación
+                | 4. Confirmar reservación
                 */
                 'reservation.create',
                 'reservation.view',
-                'reservation.cancel',
+                // 'reservation.cancel',
+                // 'reservation.confirm',
+
             ],
         ];
 

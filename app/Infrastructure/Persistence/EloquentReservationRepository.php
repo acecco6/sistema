@@ -40,37 +40,67 @@ final class EloquentReservationRepository implements ReservationRepository
             ->all();
     }
 
-    public function hasOverlap(int $courtId, DateTimeImmutable $startsAt, DateTimeImmutable $endsAt, ?int $excludeReservationId = null,): bool
+    public function hasOverlap(int $courtId, DateTimeImmutable $startsAt, DateTimeImmutable $endsAt, ?int $excludeReservationId = null): bool
     {
-        $query = EloquentReservation::query()->where('court_id', $courtId)
+        return EloquentReservation::query()
+
+            // Misma cancha
+            ->where('court_id', $courtId)
 
             /*
-             * Solamente estados que bloquean disponibilidad.
-             */
-            ->whereIn('status', [ReservationStatus::PENDING->value, ReservationStatus::CONFIRMED->value])
+        |--------------------------------------------------------------------------
+        | Estados que realmente bloquean
+        |--------------------------------------------------------------------------
+        |
+        | CONFIRMED:
+        | siempre bloquea.
+        |
+        | PENDING:
+        | solamente bloquea si todavía no venció.
+        |
+        */
+            ->where(function ($query) {
+
+                $query
+                    ->where('status', ReservationStatus::CONFIRMED->value)
+                    ->orWhere(function ($query) {
+                        $query->where('status', ReservationStatus::PENDING->value)
+                            ->whereNotNull('expires_at')
+                            ->where('expires_at', '>', now());
+                    });
+            })
 
             /*
-             * Regla de overlap:
-             * existing.starts_at < new.ends_at
-             * AND
-             * existing.ends_at > new.starts_at
-             */
-            ->where('starts_at', '<', $endsAt->format('Y-m-d H:i:s'))
-            ->where('ends_at', '>', $startsAt->format('Y-m-d H:i:s'));
+        |--------------------------------------------------------------------------
+        | Overlap real de horarios
+        |--------------------------------------------------------------------------
+        |
+        | existente.starts_at < nuevo.ends_at
+        | existente.ends_at   > nuevo.starts_at
+        |
+        | Esto permite reservas consecutivas:
+        |
+        | 18:00 - 19:00
+        | 19:00 - 20:00 ✅
+        |
+        */
+            ->where('starts_at', '<', $endsAt)
+            ->where('ends_at', '>', $startsAt)
 
-        /*
-         * Esto nos va a servir más adelante
-         * si permitimos modificar una reserva.
-         *
-         * Evita que una reserva choque consigo misma.
-         */
-        if ($excludeReservationId !== null) {
-            $query->where('id', '!=', $excludeReservationId);
-        }
-
-        return $query->exists();
+            /*
+        |--------------------------------------------------------------------------
+        | Excluir una reserva concreta
+        |--------------------------------------------------------------------------
+        |
+        | Útil si más adelante permitimos editar/reprogramar.
+        |
+        */
+            ->when(
+                $excludeReservationId !== null,
+                fn($query) => $query->where('id', '!=', $excludeReservationId)
+            )
+            ->exists();
     }
-
     public function save(DomainReservation $reservation): DomainReservation
     {
         $eloquentReservation = EloquentReservation::create([
@@ -87,6 +117,7 @@ final class EloquentReservationRepository implements ReservationRepository
             'public_token' => $reservation->getPublicToken(),
             'notes' => $reservation->getNotes(),
             'cancelled_at' => $reservation->getCancelledAt()?->format('Y-m-d H:i:s'),
+            'expires_at' => $reservation->getExpiresAt()?->format('Y-m-d H:i:s'),
         ]);
 
         return $this->toDomain($eloquentReservation);
@@ -161,6 +192,7 @@ final class EloquentReservationRepository implements ReservationRepository
             publicToken: $reservation->public_token,
             notes: $reservation->notes,
             cancelledAt: $reservation->cancelled_at ? new DateTimeImmutable($reservation->cancelled_at->format('Y-m-d H:i:s')) : null,
+            expiresAt: $reservation->expires_at ? new DateTimeImmutable($reservation->expires_at->format('Y-m-d H:i:s')) : null,
         );
     }
 
@@ -174,6 +206,20 @@ final class EloquentReservationRepository implements ReservationRepository
             ->orderBy('starts_at')
             ->get()
             ->map(fn(EloquentReservation $reservation) => $this->toDomain($reservation))
+            ->all();
+    }
+
+    public function findExpiredPending(): array
+    {
+        return EloquentReservation::query()
+            ->where('status', ReservationStatus::PENDING->value)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->get()
+            ->map(
+                fn(EloquentReservation $model) =>
+                $this->toDomain($model)
+            )
             ->all();
     }
 

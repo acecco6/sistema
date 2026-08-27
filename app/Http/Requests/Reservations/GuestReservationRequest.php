@@ -56,6 +56,8 @@ class GuestReservationRequest extends FormRequest
                 'string',
                 'max:1000',
             ],
+
+            'confirmed' => ['prohibited'],
         ];
     }
 

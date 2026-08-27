@@ -26,6 +26,7 @@ final class Reservation extends Model
         'public_token',
         'notes',
         'cancelled_at',
+        'expires_at'
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ final class Reservation extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'expires_at' => 'datetime',
             'total_price' => 'decimal:2',
             'status' => ReservationStatus::class,
         ];

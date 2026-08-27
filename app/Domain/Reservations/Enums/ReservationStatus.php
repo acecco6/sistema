@@ -4,10 +4,11 @@ namespace App\Domain\Reservations\Enums;
 
 enum ReservationStatus: string
 {
-    case PENDING = 'pending';
-    case CONFIRMED = 'confirmed';
-    case CANCELLED = 'cancelled';
-    case COMPLETED = 'completed';
+    case PENDING    = 'pending';
+    case CONFIRMED  = 'confirmed';
+    case CANCELLED  = 'cancelled';
+    case COMPLETED  = 'completed';
+    case EXPIRED    = 'expired';
 
     /*
      * Determina si este estado debe ocupar
@@ -20,7 +21,8 @@ enum ReservationStatus: string
             self::CONFIRMED => true,
 
             self::CANCELLED,
-            self::COMPLETED => false,
+            self::COMPLETED,
+            self::EXPIRED => false,
         };
     }
 

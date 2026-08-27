@@ -31,6 +31,7 @@ final class Reservation
 
         private ?string $notes = null,
         private ?DateTimeImmutable $cancelledAt = null,
+        private ?DateTimeImmutable $expiresAt = null,
     ) {
         $this->validateCustomer();
     }
@@ -92,16 +93,35 @@ final class Reservation
 
     public function confirm(): void
     {
-        if ($this->status === ReservationStatus::CONFIRMED) {
-            return;
+        if ($this->status !== ReservationStatus::PENDING) {
+            throw new InvalidReservationStatusTransitionException(
+                'Solo una reserva pendiente puede confirmarse.'
+            );
         }
 
-        if ($this->status !== ReservationStatus::PENDING) {
-            throw new InvalidReservationStatusTransitionException("No se puede confirmar una reserva con estado {$this->status->value}.");
+        if (
+            $this->expiresAt !== null
+            && new DateTimeImmutable() >= $this->expiresAt
+        ) {
+            throw new InvalidReservationStatusTransitionException(
+                'La reserva ya expiró.'
+            );
         }
 
         $this->status = ReservationStatus::CONFIRMED;
     }
+
+    public function expire(): void
+    {
+        if ($this->status !== ReservationStatus::PENDING) {
+            throw new InvalidReservationStatusTransitionException(
+                'Solo una reserva pendiente puede expirar.'
+            );
+        }
+
+        $this->status = ReservationStatus::EXPIRED;
+    }
+
 
     public function cancel(?DateTimeImmutable $cancelledAt = null): void
     {
@@ -155,6 +175,11 @@ final class Reservation
     | Getters
     |--------------------------------------------------------------------------
     */
+
+    public function getExpiresAt(): ?DateTimeImmutable
+    {
+        return $this->expiresAt;
+    }
 
     public function getId(): ?int
     {

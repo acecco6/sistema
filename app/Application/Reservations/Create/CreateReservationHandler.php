@@ -16,6 +16,7 @@ use App\Domain\Reservations\Entities\Reservation;
 use App\Domain\Reservations\Entities\ReservationPriceSegment;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Repositories\ReservationRepository;
+use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -128,6 +129,10 @@ final class CreateReservationHandler
                     : ReservationStatus::PENDING;
 
 
+                $expiresAt = $status === ReservationStatus::PENDING
+                    ? new DateTimeImmutable('+15 minutes')
+                    : null;
+
                 /*
                 |--------------------------------------------------------------------------
                 | 6. Crear entidad Reservation
@@ -149,6 +154,7 @@ final class CreateReservationHandler
                     publicToken: (string) Str::uuid(),
                     notes: $command->notes,
                     cancelledAt: null,
+                    expiresAt: $expiresAt,
                 );
 
 

@@ -55,6 +55,7 @@ final class ReservationTest extends TestCase
                     'customer_user_id' => $customer->id,
                     'starts_at' => '2030-09-10 14:00:00',
                     'ends_at' => '2030-09-10 15:00:00',
+                    'confirmed' => true,
                 ]
             );
 
@@ -499,6 +500,54 @@ final class ReservationTest extends TestCase
             $court,
             $tipoCourt,
         ];
+    }
+
+    public function test_guest_no_puede_forzar_reserva_confirmada(): void
+    {
+        [$club, $branch, $court, $tipoCourt] = $this->createCourtScenario();
+
+        $response = $this->postJson(
+            "/api/public/courts/{$court->id}/book",
+            [
+                'guest_name' => 'Alejo',
+                'guest_email' => 'alejo@test.com',
+                'starts_at' => now()->addDays(2)->setTime(18, 0)->toDateTimeString(),
+                'ends_at' => now()->addDays(2)->setTime(19, 0)->toDateTimeString(),
+                'confirmed' => true,
+            ]
+        );
+
+        $response->assertStatus(422);
+
+        $response->assertJsonValidationErrors([
+            'confirmed',
+        ]);
+    }
+
+
+    public function test_cliente_no_puede_forzar_reserva_confirmada(): void
+    {
+        [$club, $branch, $court, $tipoCourt] = $this->createCourtScenario();
+
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = $this->postJson(
+            "/api/courts/{$court->id}/book",
+            [
+                'starts_at' => now()->addDays(2)->setTime(18, 0)->toDateTimeString(),
+                'ends_at' => now()->addDays(2)->setTime(19, 0)->toDateTimeString(),
+                'confirmed' => true,
+            ]
+        );
+
+        $response->assertStatus(422);
+
+        $response->assertJsonValidationErrors([
+            'confirmed',
+        ]);
     }
 
     private function createCourtScenario(): array

@@ -34,7 +34,7 @@ final class CreateReservationController extends Controller
                  * Reserva creada por personal del club:
                  * nace confirmada.
                  */
-                confirmed: true,
+                confirmed: $validated['confirmed'] ?? false,
             )
         );
 
