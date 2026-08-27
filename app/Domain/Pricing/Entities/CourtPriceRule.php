@@ -101,4 +101,78 @@ final class CourtPriceRule
 
         return true;
     }
+
+
+    public function getCourtPriceId(): int
+    {
+        return $this->courtPriceId;
+    }
+
+    public function getDayOfWeek(): ?int
+    {
+        return $this->dayOfWeek;
+    }
+
+    public function getSpecificDate(): ?string
+    {
+        return $this->specificDate;
+    }
+
+    public function getStartTime(): ?string
+    {
+        return $this->startTime;
+    }
+
+    public function getEndTime(): ?string
+    {
+        return $this->endTime;
+    }
+
+    public function getStartsAt(): ?string
+    {
+        return $this->startsAt;
+    }
+
+    public function getEndsAt(): ?string
+    {
+        return $this->endsAt;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function update(
+        string $name,
+        string $price,
+        ?int $dayOfWeek,
+        ?string $specificDate,
+        ?string $startTime,
+        ?string $endTime,
+        int $priority,
+        ?string $startsAt,
+        ?string $endsAt,
+    ): void {
+
+        $this->name       = $name;
+        $this->price      = $price;
+        $this->dayOfWeek  = $dayOfWeek;
+        $this->specificDate = $specificDate;
+        $this->startTime  = $startTime;
+        $this->endTime    = $endTime;
+        $this->priority   = $priority;
+        $this->startsAt   = $startsAt;
+        $this->endsAt     = $endsAt;
+    }
+
+    public function activate(): void
+    {
+        $this->active = true;
+    }
+
+    public function deactivate(): void
+    {
+        $this->active = false;
+    }
 }

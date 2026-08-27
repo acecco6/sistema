@@ -36,4 +36,19 @@ final class CourtPrice
     {
         return $this->active;
     }
+
+    public function changePrice(string $price): void
+    {
+        $this->price = $price;
+    }
+
+    public function activate(): void
+    {
+        $this->active = true;
+    }
+
+    public function deactivate(): void
+    {
+        $this->active = false;
+    }
 }
