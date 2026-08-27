@@ -4,14 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class CourtPrice extends Model
+final class CourtPriceRule extends Model
 {
     protected $fillable = [
-        'branch_id',
-        'tipo_court_id',
+        'court_price_id',
+        'name',
         'price',
+        'day_of_week',
+        'specific_date',
+        'start_time',
+        'end_time',
+        'priority',
+        'starts_at',
+        'ends_at',
         'active',
     ];
 
@@ -19,32 +25,17 @@ final class CourtPrice extends Model
     {
         return [
             'price' => 'decimal:2',
+            'day_of_week' => 'integer',
+            'specific_date' => 'date',
+            'starts_at' => 'datetime',
+            'ends_at' => 'datetime',
+            'priority' => 'integer',
             'active' => 'boolean',
         ];
     }
 
-    public function branch(): BelongsTo
+    public function courtPrice(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
-    }
-
-    public function tipoCourt(): BelongsTo
-    {
-        return $this->belongsTo(TipoCourt::class);
-    }
-
-    public function rules(): HasMany
-    {
-        return $this->hasMany(CourtPriceRule::class);
-    }
-
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
+        return $this->belongsTo(CourtPrice::class);
     }
 }
