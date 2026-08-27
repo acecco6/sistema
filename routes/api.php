@@ -98,12 +98,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('{id}/branche', ChangeMembershipBranchController::class)->name('membership.change_branch');
     });
 
-    // Rutas de Courts (Canchas)
+    // Rutas de Courts (Canchas) por Sucursal (Lectura y Creación)
     Route::prefix('branches/{branch_id}/courts')->middleware('permission')->group(function () {
         Route::get('', GetCourtController::class)->name('court.collection');
         Route::post('', CreateCourtController::class)->name('court.create');
     });
 
+    // Rutas de Courts (Canchas) Individuales
     Route::prefix('courts')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowCourtController::class)->name('court.view');
         Route::put('/{id}', UpdateCourtController::class)->name('court.update');
@@ -111,14 +112,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
-    // Rutas de Precios por Sucursal
+    // Rutas de Precios por Sucursal (Lectura y Creación)
     Route::prefix('branches/{branch_id}/prices')->middleware('permission')->group(function () {
         Route::get('', GetCourtPriceController::class)->name('court_price.collection');
         Route::post('', CreateCourtPriceController::class)->name('court_price.create');
     });
 
 
-    // Rutas individuales de Precios
+    // Rutas individuales de Precios (Actualización, Visualización única, Cambio de estado)
     Route::prefix('court_prices')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowCourtPriceController::class)->name('court_price.view');
         Route::put('/{id}', UpdateCourtPriceController::class)->name('court_price.update');
@@ -126,14 +127,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
-    // Rutas de Promociones por Precio
+    // Rutas de Promociones por Precio (Lectura y Creación)
     Route::prefix('court_prices/{court_price_id}/promotions')->middleware('permission')->group(function () {
         Route::get('', GetCourtPromotionController::class)->name('court_promotion.collection');
         Route::post('', CreateCourtPromotionController::class)->name('court_promotion.create');
     });
 
 
-    // Rutas individuales de Promociones
+    // Rutas individuales de Promociones (Actualización, Visualización única, Cambio de estado)
     Route::prefix('court_promotions')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowCourtPromotionController::class)->name('court_promotion.view');
         Route::put('/{id}', UpdateCourtPromotionController::class)->name('court_promotion.update');
