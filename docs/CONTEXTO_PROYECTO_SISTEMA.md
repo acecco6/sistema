@@ -1091,18 +1091,19 @@ MySQL.
 
 Prioridad aproximada:
 
-1.  Crear módulo Courts.
-2.  Crear migration/model/entity/repository de Court.
-3.  Crear Application use cases de Court.
-4.  Agregar permisos `court.*`.
-5.  Extender autorización para resolver scope de Court.
-6.  Crear `CourtFactory`.
-7.  Crear Feature Tests de Courts.
-8.  Comenzar Reservations.
-9.  Diseñar reglas para evitar reservas superpuestas.
-10. Introducir transacciones y concurrencia.
-11. Analizar índices MySQL y consultas con `EXPLAIN`.
-12. Más adelante evaluar Unit Tests puros del Domain además de Feature
+1.  Crear módulo Courts. (terminado)
+2.  Crear migration/model/entity/repository de Court. (terminado)
+3.  Crear Application use cases de Court. (terminado)
+4.  Agregar permisos `court.*`. (terminado)
+5.  Extender autorización para resolver scope de Court. (terminado)
+6.  Crear `CourtFactory`. (terminado)
+7.  Crear Feature Tests de Courts. (terminado)
+8.  Diseño de como implementar Precios y promociones por dia y hora.
+9.  Comenzar Reservations.
+10. Diseñar reglas para evitar reservas superpuestas.
+11. Introducir transacciones y concurrencia.
+12. Analizar índices MySQL y consultas con `EXPLAIN`.
+13. Más adelante evaluar Unit Tests puros del Domain además de Feature
     Tests.
 
 ---

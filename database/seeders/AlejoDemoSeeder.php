@@ -228,12 +228,17 @@ final class AlejoDemoSeeder extends Seeder
 
     private function intervalForTipoCourt(string $tipo): int
     {
+        $opciones = [
+            30,
+            60,
+        ];
+
         return match ($tipo) {
-            'Padel' => 90,
-            'Tenis' => 60,
-            'Fútbol 5' => 60,
-            'Fútbol 7' => 90,
-            default => 60,
+            'Padel' => $opciones[array_rand($opciones)],
+            'Tenis' => $opciones[array_rand($opciones)],
+            'Fútbol 5' => $opciones[array_rand($opciones)],
+            'Fútbol 7' => $opciones[array_rand($opciones)],
+            default => $opciones[array_rand($opciones)],
         };
     }
 }

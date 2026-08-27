@@ -9,6 +9,9 @@ use App\Domain\Courts\Exceptions\CourtNotFoundException;
 use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Memberships\Exceptions\MembershipNotFoundException;
 use App\Domain\Memberships\Repositories\MembershipRepository;
+use App\Domain\Pricing\Exceptions\CourtPriceNotFoundException;
+use App\Domain\Pricing\Exceptions\CourtPriceRuleNotFoundException;
+use App\Domain\Pricing\Repositories\CourtPriceRepository;
 use App\Shared\Exceptions\AuthorizationDeniedException;
 use Closure;
 use Illuminate\Http\Request;
@@ -23,6 +26,7 @@ final class CheckPermission
         private BranchRepository $branches,
         private MembershipRepository $memberships,
         private CourtRepository $courts,
+        private CourtPriceRepository $prices,
     ) {}
 
     public function handle(
@@ -82,6 +86,11 @@ final class CheckPermission
             'branch' => $this->resolveBranchScope($request),
             'membership' => $this->resolveMembershipScope($request),
             'court' => $this->resolveCourtScope($request),
+
+            'court_price' => $this->resolveCourtPriceScope($request),
+
+            'court_promotion' =>
+            $this->resolveCourtPromotionScope($request),
 
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
@@ -286,6 +295,16 @@ final class CheckPermission
                 userId: $userId,
             ),
 
+            'court_price' => $this->authorizeCourtPriceCollection(
+                $request,
+                $userId
+            ),
+
+            'court_promotion' => $this->authorizeCourtPromotionCollection(
+                $request,
+                $userId
+            ),
+
             default => throw new RuntimeException(
                 "No existe autorización de colección para [{$resource}]."
             ),
@@ -339,6 +358,202 @@ final class CheckPermission
             clubId: $branch->getClubId(),
             branchId: $branch->getId()
         );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function resolveCourtPriceScope(
+        Request $request
+    ): array {
+        /*
+     * CREATE:
+     *
+     * POST /branches/{branch_id}/prices
+     */
+        $branchId = $request->route('branch_id');
+
+        if ($branchId !== null) {
+            $branch = $this->branches->findById(
+                (int) $branchId
+            );
+
+            if ($branch === null) {
+                throw new BranchNotFoundException();
+            }
+
+            return [
+                'clubId' => $branch->getClubId(),
+                'branchId' => $branch->getId(),
+            ];
+        }
+
+        /*
+     * VIEW / UPDATE / STATUS:
+     *
+     * /court_prices/{id}
+     */
+        $priceId = $request->route('id');
+
+        if ($priceId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar el precio.'
+            );
+        }
+
+        $price = $this->prices->findById(
+            (int) $priceId
+        );
+
+        if ($price === null) {
+            throw new CourtPriceNotFoundException();
+        }
+
+        $branch = $this->branches->findById(
+            $price->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return [
+            'clubId' => $branch->getClubId(),
+            'branchId' => $branch->getId(),
+        ];
+    }
+
+
+    private function resolveCourtPromotionScope(
+        Request $request
+    ): array {
+        /*
+     * CREATE:
+     *
+     * POST /court_prices/{court_price_id}/promotions
+     */
+        $courtPriceId = $request->route(
+            'court_price_id'
+        );
+
+        if ($courtPriceId !== null) {
+            $price = $this->prices->findById(
+                (int) $courtPriceId
+            );
+        } else {
+            /*
+         * VIEW / UPDATE / STATUS:
+         *
+         * /court_promotions/{id}
+         */
+            $promotionId = $request->route('id');
+
+            if ($promotionId === null) {
+                throw new RuntimeException(
+                    'No se pudo determinar la promoción.'
+                );
+            }
+
+            $promotion = $this->prices->findRuleById(
+                (int) $promotionId
+            );
+
+            if ($promotion === null) {
+                throw new CourtPriceRuleNotFoundException();
+            }
+
+            $price = $this->prices->findById(
+                $promotion->getCourtPriceId()
+            );
+        }
+
+        if ($price === null) {
+            throw new CourtPriceNotFoundException();
+        }
+
+        $branch = $this->branches->findById(
+            $price->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return [
+            'clubId' => $branch->getClubId(),
+            'branchId' => $branch->getId(),
+        ];
+    }
+
+    private function authorizeCourtPriceCollection(
+        Request $request,
+        int $userId
+    ): void {
+        $branchId = $request->route('branch_id');
+
+        if ($branchId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar la sucursal.'
+            );
+        }
+
+        $branch = $this->branches->findById(
+            (int) $branchId
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        $membership = $this->memberships
+            ->findActiveForScope(
+                userId: $userId,
+                clubId: $branch->getClubId(),
+                branchId: $branch->getId(),
+            );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function authorizeCourtPromotionCollection(
+        Request $request,
+        int $userId
+    ): void {
+        $courtPriceId = $request->route(
+            'court_price_id'
+        );
+
+        if ($courtPriceId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar el precio.'
+            );
+        }
+
+        $price = $this->prices->findById(
+            (int) $courtPriceId
+        );
+
+        if ($price === null) {
+            throw new CourtPriceNotFoundException();
+        }
+
+        $branch = $this->branches->findById(
+            $price->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        $membership = $this->memberships
+            ->findActiveForScope(
+                userId: $userId,
+                clubId: $branch->getClubId(),
+                branchId: $branch->getId(),
+            );
 
         if ($membership === null) {
             throw new AuthorizationDeniedException();
