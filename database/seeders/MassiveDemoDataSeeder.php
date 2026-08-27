@@ -91,9 +91,7 @@ final class MassiveDemoDataSeeder extends Seeder
                             [
                                 'interval_minutes' => fake()->randomElement([
                                     30,
-                                    60,
-                                    90,
-                                    120,
+                                    60
                                 ]),
                                 'created_at' => now(),
                                 'updated_at' => now(),
