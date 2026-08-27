@@ -45,6 +45,18 @@ use App\Http\Controllers\Pricing\{
     UpdateCourtPriceController,
     UpdateCourtPromotionController
 };
+use App\Http\Controllers\Reservations\{
+    BookCourtAuthenticatedController,
+
+    BookCourtGuestController,
+    CancelReservationController,
+    ConfirmReservationController,
+    CreateReservationController,
+    GetCourtAvailabilityController,
+    GetCourtReservationsController,
+    GetTipoCourtAvailabilityController,
+    ShowReservationController
+};
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,6 +64,19 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class)->name('auth.login');
     Route::post('/register', RegisterController::class)->name('auth.register');
+});
+
+// Rutas Publicas de Reservas para Invitados
+Route::prefix('public')->group(function () {
+
+    // Rutas de Disponibilidad por Cancha
+    Route::prefix('courts/{court_id}')->group(function () {
+        Route::post('book', BookCourtGuestController::class)->name('reservation.guest.create');
+        Route::get('availability', GetCourtAvailabilityController::class)->name('availability.collection');
+    });
+
+    // Rutas de Disponibilidad por Tipo de Cancha
+    Route::get('branches/{branch_id}/availability', GetTipoCourtAvailabilityController::class)->name('availability.tipo_court.collection');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -139,5 +164,35 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', ShowCourtPromotionController::class)->name('court_promotion.view');
         Route::put('/{id}', UpdateCourtPromotionController::class)->name('court_promotion.update');
         Route::patch('/{id}/status', ChangeCourtPromotionStatusController::class)->name('court_promotion.change_status');
+    });
+
+
+    // Rutas de Reservas por Cancha (Creación para personal)
+    Route::prefix('courts/{court_id}/reservations')->middleware('permission')->group(function () {
+        Route::get('', GetCourtReservationsController::class)->name('reservation.collection');
+        Route::post('', CreateReservationController::class)->name('reservation.create');
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reserva para cliente autenticado
+    |--------------------------------------------------------------------------
+    |
+    | Requiere auth:sanctum porque ya estamos dentro
+    | del grupo autenticado.
+    |
+    | NO requiere el middleware permission porque
+    | el cliente reserva solamente para sí mismo.
+    |
+    */
+
+    Route::post('courts/{court_id}/book', BookCourtAuthenticatedController::class)->name('reservation.customer.create');
+
+    // Rutas de Reservas individuales
+    Route::prefix('reservations')->middleware('permission')->group(function () {
+        Route::get('/{id}', ShowReservationController::class)->name('reservation.view');
+        Route::patch('/{id}/cancel', CancelReservationController::class)->name('reservation.cancel');
+        Route::patch('/{id}/confirm', ConfirmReservationController::class)->name('reservation.confirm');
     });
 });

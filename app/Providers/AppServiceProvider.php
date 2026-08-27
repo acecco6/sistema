@@ -2,28 +2,38 @@
 
 namespace App\Providers;
 
-use App\Application\Auth\Contracts\PasswordHasher;
-use App\Application\Auth\Contracts\TokenGenerator;
+use App\Application\Auth\Contracts\{
+    PasswordHasher,
+    TokenGenerator
+};
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Clubs\Repositories\ClubRepository;
-use App\Domain\Courts\Repositories\CourtRepository;
-use App\Domain\Courts\Repositories\TipoCourtRepository;
+use App\Domain\Courts\Repositories\{
+    CourtRepository,
+    TipoCourtRepository
+};
+use App\Domain\Courts\Repositories\IntervalTimeTipoCourtRepository;
 use App\Domain\Memberships\Repositories\MembershipRepository;
 use App\Domain\Permissions\Repositories\PermissionRepository;
 use App\Domain\Pricing\Repositories\CourtPriceRepository;
+use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Domain\Roles\Repositories\RoleRepository;
 use App\Domain\Users\Repositories\UserRepository;
 use App\Infrastructure\Auth\LaravelPasswordHasher;
 use App\Infrastructure\Auth\Sanctum\SanctumTokenGenerator;
-use App\Infrastructure\Persistence\EloquentBranchRepository;
-use App\Infrastructure\Persistence\EloquentClubRepository;
-use App\Infrastructure\Persistence\EloquentCourtPriceRepository;
-use App\Infrastructure\Persistence\EloquentCourtRepository;
-use App\Infrastructure\Persistence\EloquentMembershipRepository;
-use App\Infrastructure\Persistence\EloquentPermissionRepository;
-use App\Infrastructure\Persistence\EloquentRoleRepository;
-use App\Infrastructure\Persistence\EloquentTipoCourtRepository;
-use App\Infrastructure\Persistence\EloquentUserRepository;
+use App\Infrastructure\Persistence\{
+    EloquentBranchRepository,
+    EloquentClubRepository,
+    EloquentCourtPriceRepository,
+    EloquentCourtRepository,
+    EloquentMembershipRepository,
+    EloquentPermissionRepository,
+    EloquentReservationRepository,
+    EloquentRoleRepository,
+    EloquentTipoCourtRepository,
+    EloquentUserRepository
+};
+use App\Infrastructure\Persistence\EloquentIntervalTimeTipoCourtRepository;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -47,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CourtRepository::class, EloquentCourtRepository::class);
         $this->app->bind(TipoCourtRepository::class, EloquentTipoCourtRepository::class);
         $this->app->bind(CourtPriceRepository::class, EloquentCourtPriceRepository::class);
+        $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
+        $this->app->bind(IntervalTimeTipoCourtRepository::class, EloquentIntervalTimeTipoCourtRepository::class);
     }
 
     /**

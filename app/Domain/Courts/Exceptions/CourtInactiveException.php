@@ -6,8 +6,8 @@ use App\Shared\Exceptions\DomainException;
 
 final class CourtInactiveException extends DomainException
 {
-    public function __construct(int $id)
+    public function __construct()
     {
-        parent::__construct("La cancha con ID {$id} se encuentra inactiva.", 409);
+        parent::__construct("La cancha se encuentra inactiva.", 409);
     }
 }

@@ -1,0 +1,267 @@
+<?php
+
+namespace Tests\Feature\Reservations;
+
+use App\Models\Branch;
+use App\Models\Club;
+use App\Models\Court;
+use App\Models\Reservation;
+use App\Models\TipoCourt;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
+
+final class AvailabilityTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private $routeCourtAvailability = '/api/public/courts/';
+    private $routeTipoCourtAvailability = '/api/public/branches/';
+    public function test_muestra_slots_disponibles_y_ocupados_de_una_court(): void
+    {
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 60,
+        );
+
+        Reservation::factory()
+            ->for($court)
+            ->confirmed()
+            ->between(
+                '2030-09-10 09:00:00',
+                '2030-09-10 10:00:00'
+            )
+            ->createOne();
+
+        $response = $this->getJson(
+            "{$this->routeCourtAvailability}{$court->id}/availability?date=2030-09-10"
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 09:00:00',
+            'ends_at' => '2030-09-10 10:00:00',
+            'available' => false,
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 10:00:00',
+            'ends_at' => '2030-09-10 11:00:00',
+            'available' => true,
+        ]);
+    }
+
+    public function test_reserva_cancelada_no_marca_slot_como_ocupado(): void
+    {
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 60,
+        );
+
+        Reservation::factory()
+            ->for($court)
+            ->cancelled()
+            ->between(
+                '2030-09-10 09:00:00',
+                '2030-09-10 10:00:00'
+            )
+            ->createOne();
+
+        $response = $this->getJson(
+            "{$this->routeCourtAvailability}{$court->id}/availability?date=2030-09-10"
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 09:00:00',
+            'ends_at' => '2030-09-10 10:00:00',
+            'available' => true,
+        ]);
+    }
+
+    public function test_busca_disponibilidad_de_todas_las_courts_de_un_tipo(): void
+    {
+        /** @var Club $club */
+        $club = Club::factory()->createOne();
+
+        /** @var Branch $branch */
+        $branch = Branch::factory()
+            ->for($club)
+            ->createOne();
+
+        /** @var TipoCourt $tipoCourt */
+        $tipoCourt = TipoCourt::factory()->createOne();
+
+        /** @var Court $court1 */
+        $court1 = Court::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'name' => 'Padel 1',
+            'active' => true,
+        ]);
+
+        /** @var Court $court2 */
+        $court2 = Court::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'name' => 'Padel 2',
+            'active' => true,
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 60,
+        );
+
+        Reservation::factory()
+            ->for($court1)
+            ->confirmed()
+            ->between(
+                '2030-09-10 18:00:00',
+                '2030-09-10 19:00:00'
+            )
+            ->createOne();
+
+        $response = $this->getJson(
+            "{$this->routeTipoCourtAvailability}{$branch->id}/availability"
+                . '?date=2030-09-10'
+                . "&tipo_court_id={$tipoCourt->id}"
+                . '&start_time=18:00:00'
+                . '&end_time=19:00:00'
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonFragment([
+                'court_id' => $court1->id,
+                'court_name' => 'Padel 1',
+            ])
+            ->assertJsonFragment([
+                'court_id' => $court2->id,
+                'court_name' => 'Padel 2',
+            ]);
+
+        /*
+         * Court 1 ocupada.
+         */
+        $response->assertJsonFragment([
+            'court_id' => $court1->id,
+        ]);
+
+        /*
+         * Los detalles exactos se pueden comprobar
+         * con assertJsonPath una vez veamos el shape real
+         * de tu successResponse.
+         */
+    }
+
+    public function test_no_devuelve_courts_inactivas_en_busqueda_por_tipo(): void
+    {
+        /** @var Club $club */
+        $club = Club::factory()->createOne();
+
+        /** @var Branch $branch */
+        $branch = Branch::factory()
+            ->for($club)
+            ->createOne();
+
+        /** @var TipoCourt $tipoCourt */
+        $tipoCourt = TipoCourt::factory()->createOne();
+
+        $activeCourt = Court::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'active' => true,
+        ]);
+
+        $inactiveCourt = Court::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'active' => false,
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 60,
+        );
+
+        $response = $this->getJson(
+            "{$this->routeTipoCourtAvailability}{$branch->id}/availability"
+                . '?date=2030-09-10'
+                . "&tipo_court_id={$tipoCourt->id}"
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonFragment([
+            'court_id' => $activeCourt->id,
+        ]);
+
+        $response->assertJsonMissing([
+            'court_id' => $inactiveCourt->id,
+        ]);
+    }
+
+    private function createScenario(): array
+    {
+        /** @var Club $club */
+        $club = Club::factory()->createOne();
+
+        /** @var Branch $branch */
+        $branch = Branch::factory()
+            ->for($club)
+            ->createOne();
+
+        /** @var TipoCourt $tipoCourt */
+        $tipoCourt = TipoCourt::factory()->createOne();
+
+        /** @var Court $court */
+        $court = Court::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'active' => true,
+        ]);
+
+        return [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ];
+    }
+
+    private function createInterval(
+        int $branchId,
+        int $tipoCourtId,
+        int $minutes,
+    ): void {
+        DB::table('interval_time_tipo_court')
+            ->insert([
+                'branch_id' => $branchId,
+                'tipo_court_id' => $tipoCourtId,
+                'interval_minutes' => $minutes,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+}

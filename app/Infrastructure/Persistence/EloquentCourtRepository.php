@@ -48,6 +48,32 @@ class EloquentCourtRepository implements CourtRepository
         return $this->toDomain($eloquentCourt);
     }
 
+    public function findActiveByBranchAndTipo(int $branchId, int $tipoCourtId): array
+    {
+        return EloquentCourt::query()
+            ->where('branch_id', $branchId)
+            ->where('tipo_court_id', $tipoCourtId)
+            ->where('active', true)
+            ->get()
+            ->map(
+                fn(EloquentCourt $court) =>
+                $this->toDomain($court)
+            )
+            ->all();
+    }
+
+    public function findByIdForUpdate(int $id): ?Court
+    {
+        $court = EloquentCourt::query()
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        return $court
+            ? $this->toDomain($court)
+            : null;
+    }
+
     protected function toDomain(EloquentCourt $eloquentCourt): Court
     {
         return new Court(

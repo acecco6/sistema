@@ -1098,13 +1098,13 @@ Prioridad aproximada:
 5.  Extender autorización para resolver scope de Court. (terminado)
 6.  Crear `CourtFactory`. (terminado)
 7.  Crear Feature Tests de Courts. (terminado)
-8.  Diseño de como implementar Precios y promociones por dia y hora.
-9.  Comenzar Reservations.
-10. Diseñar reglas para evitar reservas superpuestas.
-11. Introducir transacciones y concurrencia.
-12. Analizar índices MySQL y consultas con `EXPLAIN`.
+8.  Diseño de como implementar Precios y promociones por dia y hora. (terminado)
+9.  Comenzar Reservations. (pendiente)
+10. Diseñar reglas para evitar reservas superpuestas. (pendiente)
+11. Introducir transacciones y concurrencia. (pendiente)
+12. Analizar índices MySQL y consultas con `EXPLAIN`. (pendiente)
 13. Más adelante evaluar Unit Tests puros del Domain además de Feature
-    Tests.
+    Tests. (pendiente)
 
 ---
 
