@@ -4,14 +4,14 @@ namespace App\Domain\Reservations\Exceptions;
 
 use App\Shared\Exceptions\DomainException;
 
-final class InvalidReservationTimeException extends DomainException
+final class InvalidReservationStatusTransitionException extends DomainException
 {
     public function __construct(
-        string $message = 'El horario de la reserva no es válido.'
+        string $message = 'Cambio de estado de reserva no permitido.'
     ) {
         parent::__construct(
             $message,
-            422
+            409
         );
     }
 }

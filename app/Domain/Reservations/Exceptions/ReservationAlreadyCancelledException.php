@@ -4,12 +4,12 @@ namespace App\Domain\Reservations\Exceptions;
 
 use App\Shared\Exceptions\DomainException;
 
-final class CourtNotAvailableException extends DomainException
+final class ReservationAlreadyCancelledException extends DomainException
 {
     public function __construct()
     {
         parent::__construct(
-            'La cancha no está disponible en el horario solicitado.',
+            'La reserva ya se encuentra cancelada.',
             409
         );
     }
