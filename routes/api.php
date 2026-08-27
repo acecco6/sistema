@@ -112,14 +112,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Rutas de Precios por Sucursal
-    Route::prefix('branches/{branch_id}/prices')->group(function () {
+    Route::prefix('branches/{branch_id}/prices')->middleware('permission')->group(function () {
         Route::get('', GetCourtPriceController::class)->name('court_price.collection');
         Route::post('', CreateCourtPriceController::class)->name('court_price.create');
     });
 
 
     // Rutas individuales de Precios
-    Route::prefix('court_prices')->group(function () {
+    Route::prefix('court_prices')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowCourtPriceController::class)->name('court_price.view');
         Route::put('/{id}', UpdateCourtPriceController::class)->name('court_price.update');
         Route::patch('/{id}/status', ChangeCourtPriceStatusController::class)->name('court_price.change_status');
@@ -127,14 +127,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Rutas de Promociones por Precio
-    Route::prefix('court_prices/{court_price_id}/promotions')->group(function () {
+    Route::prefix('court_prices/{court_price_id}/promotions')->middleware('permission')->group(function () {
         Route::get('', GetCourtPromotionController::class)->name('court_promotion.collection');
         Route::post('', CreateCourtPromotionController::class)->name('court_promotion.create');
     });
 
 
     // Rutas individuales de Promociones
-    Route::prefix('court_promotions')->group(function () {
+    Route::prefix('court_promotions')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowCourtPromotionController::class)->name('court_promotion.view');
         Route::put('/{id}', UpdateCourtPromotionController::class)->name('court_promotion.update');
         Route::patch('/{id}/status', ChangeCourtPromotionStatusController::class)->name('court_promotion.change_status');
