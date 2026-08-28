@@ -34,8 +34,11 @@ final class BookCourtGuestController extends Controller
             )
         );
 
+        $data = $result->toArray();
+        $data['public_token'] = $result->publicToken;
+
         return $this->successResponse(
-            data: $result->toArray(),
+            data: $data,
             message: 'Reserva creada correctamente.',
             code: 201,
         );

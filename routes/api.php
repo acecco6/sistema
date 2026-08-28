@@ -8,8 +8,10 @@ use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtControlle
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
 use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
+use App\Http\Controllers\Reservations\CancelGuestReservationController;
 use App\Http\Controllers\Reservations\GetCustomerReservationsController;
 use App\Http\Controllers\Reservations\ShowCustomerReservationController;
+use App\Http\Controllers\Reservations\ShowGuestReservationController;
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,14 +24,23 @@ Route::prefix('auth')->group(function () {
 // Rutas Publicas de Reservas para Invitados
 Route::prefix('public')->group(function () {
 
-    // Rutas de Disponibilidad por Cancha
+
     Route::prefix('courts/{court_id}')->group(function () {
+        // Crear Reserva para invitado
         Route::post('book', BookCourtGuestController::class)->name('reservation.guest.create');
+        // Rutas de Disponibilidad por Cancha
         Route::get('availability', GetCourtAvailabilityController::class)->name('availability.collection');
     });
 
     // Rutas de Disponibilidad por Tipo de Cancha
     Route::get('branches/{branch_id}/availability', GetTipoCourtAvailabilityController::class)->name('availability.tipo_court.collection');
+
+    Route::prefix('reservations')->group(function () {
+        // Ver reserva por Token
+        Route::get('{token}', ShowGuestReservationController::class)->name('reservation.guest.view');
+        // Cancelar reserva por Token
+        Route::patch('{token}/cancel', CancelGuestReservationController::class)->name('reservation.guest.cancel');
+    });
 });
 
 Route::middleware('auth:sanctum')->group(function () {
