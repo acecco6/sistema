@@ -47,8 +47,8 @@ use App\Http\Controllers\Pricing\{
 };
 use App\Http\Controllers\Reservations\{
     BookCourtAuthenticatedController,
-
     BookCourtGuestController,
+    CancelCustomerReservationController,
     CancelReservationController,
     ConfirmReservationController,
     CreateReservationController,
@@ -188,6 +188,18 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::post('courts/{court_id}/book', BookCourtAuthenticatedController::class)->name('reservation.customer.create');
+    /*
+    |--------------------------------------------------------------------------
+    | Reservas del cliente autenticado
+    |--------------------------------------------------------------------------
+    |
+    | No utilizan middleware permission.
+    | La autorización se realiza por ownership.
+    |
+    */
+    Route::prefix('me/reservations')->group(function () {
+        Route::patch('/{id}/cancel', CancelCustomerReservationController::class)->name('reservation.customer.cancel');
+    });
 
     // Rutas de Reservas individuales
     Route::prefix('reservations')->middleware('permission')->group(function () {

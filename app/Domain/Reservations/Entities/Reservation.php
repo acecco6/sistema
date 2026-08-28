@@ -6,6 +6,7 @@ use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Exceptions\InvalidReservationCustomerException;
 use App\Domain\Reservations\Exceptions\InvalidReservationStatusTransitionException;
 use App\Domain\Reservations\Exceptions\ReservationAlreadyCancelledException;
+use App\Domain\Reservations\Exceptions\ReservationCancellationDeadlineException;
 use DateTimeImmutable;
 
 final class Reservation
@@ -135,6 +136,41 @@ final class Reservation
 
         $this->status = ReservationStatus::CANCELLED;
         $this->cancelledAt = $cancelledAt ?? new DateTimeImmutable();
+    }
+
+    public function cancelByCustomer(DateTimeImmutable $now): void
+    {
+        if ($this->status === ReservationStatus::CANCELLED) {
+            throw new ReservationAlreadyCancelledException();
+        }
+
+        if ($this->status === ReservationStatus::COMPLETED) {
+            throw new InvalidReservationStatusTransitionException('Una reserva completada no puede cancelarse.');
+        }
+
+        if ($this->status === ReservationStatus::EXPIRED) {
+            throw new InvalidReservationStatusTransitionException('Una reserva expirada no puede cancelarse.');
+        }
+
+        $cancellationDeadline = $now->modify('+24 hours');
+
+        if ($this->startsAt < $cancellationDeadline) {
+            throw new ReservationCancellationDeadlineException();
+        }
+
+        $this->status = ReservationStatus::CANCELLED;
+        $this->cancelledAt = $now;
+    }
+
+    public function cancelByStaff(DateTimeImmutable $now): void
+    {
+
+        if ($this->status === ReservationStatus::CANCELLED) {
+            return;
+        }
+
+        $this->status = ReservationStatus::CANCELLED;
+        $this->cancelledAt = $now;
     }
 
     public function complete(): void
