@@ -37,6 +37,11 @@
                                         "auth",
                                         "login"
                                     ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"email\": \"user2@example.com\",\n    \"password\": \"sample_text\"\n}",
+                                    "options": []
                                 }
                             }
                         }
@@ -71,6 +76,11 @@
                                         "auth",
                                         "register"
                                     ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user100@example.com\",\n    \"password\": \"sample_text\",\n    \"confirm_password\": \"sample_text\"\n}",
+                                    "options": []
                                 }
                             }
                         }
@@ -153,7 +163,7 @@
                                         },
                                         "body": {
                                             "mode": "raw",
-                                            "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user22@example.com\",\n    \"phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": \"sample_text\"\n}",
+                                            "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user17@example.com\",\n    \"phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": \"sample_text\"\n}",
                                             "options": []
                                         }
                                     }
@@ -192,6 +202,11 @@
                                                 "availability"
                                             ],
                                             "variable": []
+                                        },
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"date\": \"sample_text\",\n    \"duration_minutes\": 37\n}",
+                                            "options": []
                                         }
                                     }
                                 }
@@ -232,6 +247,84 @@
                                                 "branches",
                                                 ":branch_id",
                                                 "availability"
+                                            ],
+                                            "variable": []
+                                        },
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"tipo_court_id\": 1,\n    \"date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"duration_minutes\": 49\n}",
+                                            "options": []
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "reservations",
+                    "item": [
+                        {
+                            "name": "[GET] api/public/reservations/{token}",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/public/reservations/:token",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "public",
+                                        "reservations",
+                                        ":token"
+                                    ],
+                                    "variable": []
+                                }
+                            }
+                        },
+                        {
+                            "name": "cancel",
+                            "item": [
+                                {
+                                    "name": "[PATCH] api/public/reservations/{token}/cancel",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Accept",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/api/public/reservations/:token/cancel",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "public",
+                                                "reservations",
+                                                ":token",
+                                                "cancel"
                                             ],
                                             "variable": []
                                         }
@@ -400,7 +493,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"name\": \"sample_text\",\n    \"active\": 1\n}",
+                            "raw": "{\n    \"name\": \"sample_text\",\n    \"active\": 0\n}",
                             "options": []
                         }
                     }
@@ -672,7 +765,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"tipo_court_id\": 2,\n    \"name\": \"sample_text\"\n}",
+                                    "raw": "{\n    \"tipo_court_id\": 10,\n    \"name\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -744,7 +837,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"tipo_court_id\": 3,\n    \"price\": 85\n}",
+                                    "raw": "{\n    \"tipo_court_id\": 8,\n    \"price\": 90\n}",
                                     "options": []
                                 }
                             }
@@ -784,7 +877,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"user_id\": 8,\n    \"club_id\": 1,\n    \"rol_id\": 4,\n    \"branch_id\": 7\n}",
+                            "raw": "{\n    \"user_id\": 9,\n    \"club_id\": 7,\n    \"rol_id\": 6,\n    \"branch_id\": 3\n}",
                             "options": []
                         }
                     }
@@ -859,7 +952,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"rol_id\": 3\n}",
+                                    "raw": "{\n    \"rol_id\": 4\n}",
                                     "options": []
                                 }
                             }
@@ -900,7 +993,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"branch_id\": 7\n}",
+                                    "raw": "{\n    \"branch_id\": 10\n}",
                                     "options": []
                                 }
                             }
@@ -1072,7 +1165,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"customer_user_id\": 1,\n    \"guest_name\": \"sample_text\",\n    \"guest_email\": \"user39@example.com\",\n    \"guest_phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": 1\n}",
+                                    "raw": "{\n    \"customer_user_id\": 2,\n    \"guest_name\": \"sample_text\",\n    \"guest_email\": \"user90@example.com\",\n    \"guest_phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": 0\n}",
                                     "options": []
                                 }
                             }
@@ -1185,7 +1278,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"price\": 6\n}",
+                            "raw": "{\n    \"price\": 98\n}",
                             "options": []
                         }
                     }
@@ -1221,6 +1314,11 @@
                                         "status"
                                     ],
                                     "variable": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"active\": 0\n}",
+                                    "options": []
                                 }
                             }
                         }
@@ -1291,7 +1389,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 35,\n    \"day_of_week\": 10,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 6,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
+                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 6,\n    \"day_of_week\": 7,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 7,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -1363,7 +1461,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 35,\n    \"day_of_week\": 9,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 7,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
+                            "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 15,\n    \"day_of_week\": 9,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 8,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
                             "options": []
                         }
                     }
@@ -1399,8 +1497,120 @@
                                         "status"
                                     ],
                                     "variable": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"active\": 0\n}",
+                                    "options": []
                                 }
                             }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "me",
+            "item": [
+                {
+                    "name": "reservations",
+                    "item": [
+                        {
+                            "name": "[GET] api/me/reservations",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/me/reservations",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "me",
+                                        "reservations"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "[GET] api/me/reservations/{id}",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/me/reservations/:id",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "me",
+                                        "reservations",
+                                        ":id"
+                                    ],
+                                    "variable": []
+                                }
+                            }
+                        },
+                        {
+                            "name": "cancel",
+                            "item": [
+                                {
+                                    "name": "[PATCH] api/me/reservations/{id}/cancel",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Accept",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/api/me/reservations/:id/cancel",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "me",
+                                                "reservations",
+                                                ":id",
+                                                "cancel"
+                                            ],
+                                            "variable": []
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     ]
                 }

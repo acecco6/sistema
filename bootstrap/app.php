@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\AuditLog;
 use App\Shared\Exceptions\DomainException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => CheckPermission::class,
         ]);
+        $middleware->api(append: [
+            AuditLog::class,
+        ]);;
+
 
         $middleware->redirectTo(
             guests: function (Request $request) {

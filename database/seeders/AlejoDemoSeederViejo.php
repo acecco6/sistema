@@ -13,7 +13,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
-final class AlejoDemoSeeder extends Seeder
+final class AlejoDemoSeederViejo extends Seeder
 {
     public function run(): void
     {
