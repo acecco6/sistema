@@ -1,35 +1,51 @@
-# Estado del proyecto --- Sistema de gestión de clubes
+# Estado del proyecto — Sistema de gestión de clubes
 
-> Documento de continuidad para retomar el proyecto en futuras
-> conversaciones. Actualizado: 25/08/2026.
+> Documento de continuidad para retomar el proyecto en futuras conversaciones.
+> Actualizado: **27/08/2026**.
+> Fuente de esta actualización: estado real del proyecto entregado en `sistema-master(4).zip`.
+
+---
 
 ## 1. Objetivo del proyecto
 
-Proyecto Laravel usado como práctica de backend avanzado, intentando
-separar responsabilidades con una arquitectura inspirada en DDD / Clean
-Architecture.
+Proyecto Laravel usado como práctica de backend avanzado.
 
-La intención no es solamente hacer funcionar un CRUD, sino practicar:
+La idea no es solamente construir CRUDs, sino profundizar en:
 
-- PHP y Laravel a mayor profundidad.
-- Diseño de dominio.
-- Capas `Domain`, `Application`, `Infrastructure` y `Http`.
-- Repositories.
+- PHP moderno.
+- Laravel internamente.
+- DDD / Clean Architecture de forma pragmática.
+- Separación `Domain`, `Application`, `Infrastructure` y `Http`.
+- Repository Pattern.
 - Commands / Queries / Handlers.
 - DTOs.
 - Excepciones de dominio.
 - Autenticación con Laravel Sanctum.
-- Roles y permisos.
-- Autorización basada en memberships y scope.
-- Feature tests y factories.
-- Más adelante: reservas, transacciones, concurrencia, locks, índices
-  y race conditions.
+- Autorización por roles, permisos, memberships y scope.
+- Pricing y promociones.
+- Reservas.
+- Historial de precios.
+- Transacciones.
+- `lockForUpdate()`.
+- Race conditions y concurrencia.
+- Jobs y Scheduler.
+- Feature Tests y Unit Tests.
+- Más adelante: Payments, webhooks, idempotencia, índices y `EXPLAIN`.
+
+El proyecto actualmente usa:
+
+```text
+PHP ^8.3
+Laravel ^13.17
+Laravel Sanctum ^4.0
+Pest/PHPUnit mediante php artisan test
+```
 
 ---
 
-## 2. Arquitectura que estamos usando
+# 2. Arquitectura actual
 
-La estructura general sigue este criterio:
+La estructura principal sigue este criterio:
 
 ```text
 app/
@@ -39,7 +55,12 @@ app/
 │   ├── Branches/
 │   ├── Memberships/
 │   ├── Roles/
-│   └── Permissions/
+│   ├── Permissions/
+│   ├── Courts/
+│   ├── Pricing/
+│   ├── Reservations/
+│   ├── Payments/
+│   └── Products/
 │
 ├── Application/
 │   ├── Auth/
@@ -47,84 +68,142 @@ app/
 │   ├── Clubs/
 │   ├── Branches/
 │   ├── Memberships/
-│   └── Roles/
+│   ├── Roles/
+│   ├── Courts/
+│   ├── Pricing/
+│   └── Reservations/
 │
 ├── Infrastructure/
+│   ├── Auth/
 │   └── Persistence/
 │
-└── Http/
-    ├── Controllers/
-    └── Middleware/
+├── Http/
+│   ├── Controllers/
+│   ├── Middleware/
+│   └── Requests/
+│
+├── Jobs/
+├── Models/
+└── Shared/
 ```
 
-### Domain
+## Domain
 
-Contiene las reglas y conceptos del negocio:
+Contiene reglas y conceptos del negocio:
 
 - Entities.
 - Repository interfaces.
+- Enums.
 - Domain Exceptions.
 - Value Objects cuando corresponde.
 
-El Domain no debería depender de Eloquent ni de HTTP.
+Regla importante:
 
-### Application
+```text
+Domain NO debe depender de Eloquent ni de HTTP.
+```
+
+## Application
 
 Contiene los casos de uso.
 
-Patrón utilizado:
+Patrón principal:
 
 ```text
 Command / Query
         ↓
 Handler
         ↓
-Repository interfaces / Domain
+Repository interfaces / Domain Services
+        ↓
+DTO
 ```
 
-Ejemplos existentes:
+Ejemplos actuales:
 
 ```text
 Application/Clubs/Store
-Application/Clubs/Update
-Application/Branches/Get
-Application/Branches/Store
-Application/Memberships/Create
-Application/Memberships/ChangeRole
-Application/Memberships/ChangeBranche
-Application/Memberships/ChangeStatus
-Application/Roles/AssignPermission
+Application/Branches/Update
+Application/Courts/Store
+Application/Pricing/Resolver
+Application/Reservations/Create
+Application/Reservations/Availability
 ```
 
-### Infrastructure
+## Infrastructure
 
-Implementa los contratos definidos en Domain.
+Implementa los contratos del Domain.
 
 Ejemplo:
 
 ```text
-Domain
-MembershipRepository
-        ↑
-Infrastructure
-EloquentMembershipRepository
+Domain\Reservations\Repositories\ReservationRepository
+                        ↑
+Infrastructure\Persistence\EloquentReservationRepository
 ```
 
-Eloquent se mantiene principalmente en esta capa y en los Models de
-Laravel.
+## HTTP
 
-### HTTP
+Los Controllers:
 
-Los Controllers reciben la request, validan los datos, crean
-Commands/Queries y ejecutan Handlers.
+1. reciben la request;
+2. validan mediante `FormRequest` o `$request->validate()`;
+3. crean Commands/Queries;
+4. ejecutan Handlers;
+5. devuelven DTOs mediante `ApiResponse`.
 
-La lógica de negocio no debería terminar concentrada en los Controllers.
+No concentrar reglas de negocio importantes en Controllers.
 
 ---
 
-# 3. Autenticación
+# 3. Bindings del Service Container
 
-La autenticación está implementada con Laravel Sanctum.
+`App\Providers\AppServiceProvider` registra actualmente:
+
+```text
+UserRepository                     → EloquentUserRepository
+TokenGenerator                     → SanctumTokenGenerator
+PasswordHasher                     → LaravelPasswordHasher
+ClubRepository                     → EloquentClubRepository
+BranchRepository                   → EloquentBranchRepository
+RoleRepository                     → EloquentRoleRepository
+MembershipRepository               → EloquentMembershipRepository
+PermissionRepository               → EloquentPermissionRepository
+CourtRepository                    → EloquentCourtRepository
+TipoCourtRepository                → EloquentTipoCourtRepository
+CourtPriceRepository               → EloquentCourtPriceRepository
+ReservationRepository              → EloquentReservationRepository
+IntervalTimeTipoCourtRepository    → EloquentIntervalTimeTipoCourtRepository
+```
+
+---
+
+# 4. Respuesta estándar de API
+
+Existe:
+
+```text
+App\Shared\Http\Responses\ApiResponse
+```
+
+Los Controllers devuelven respuestas con estructura conceptual:
+
+```json
+{
+    "status": true,
+    "message": "...",
+    "data": {},
+    "code": 200
+}
+```
+
+Las excepciones de dominio se manejan globalmente para evitar repetir `try/catch` en cada Controller.
+
+---
+
+# 5. Autenticación
+
+Está implementada con Laravel Sanctum.
 
 Rutas públicas:
 
@@ -133,29 +212,21 @@ POST /api/auth/login
 POST /api/auth/register
 ```
 
-Ruta protegida:
+Ruta autenticada:
 
 ```text
 POST /api/auth/logout
 ```
 
-Las demás rutas principales están dentro de:
+También existe:
 
-```php
-Route::middleware('auth:sanctum')
+```text
+GET /api/user
 ```
 
-Se implementaron:
+para consultar el perfil del usuario autenticado.
 
-- Register.
-- Login.
-- Logout.
-- Generación de tokens.
-- Validación de tokens.
-- Manejo de usuario inactivo.
-- Respuestas JSON para errores de autenticación/validación.
-
-También se crearon Feature Tests para:
+Tests existentes:
 
 ```text
 tests/Feature/Auth/RegisterTest.php
@@ -163,115 +234,102 @@ tests/Feature/Auth/LoginTest.php
 tests/Feature/Auth/LogoutTest.php
 ```
 
-Los tests de logout contemplan token válido, ausencia de autenticación,
-token inválido y token expirado.
-
-Para probar expiración de Sanctum, el test debe definir explícitamente:
-
-```php
-config([
-    'sanctum.expiration' => 60,
-]);
-```
-
-y modificar `created_at` del token para no depender de la configuración
-local.
+Para testear expiración de tokens Sanctum se configuró explícitamente la expiración en tests y se manipula `created_at` del token.
 
 ---
 
-# 4. Clubs y Branches
+# 6. Clubs y Branches
 
-Relación principal:
+Jerarquía:
 
 ```text
 Club
- └── Branch
+└── Branch
 ```
-
-Un Club puede tener varias Branches.
-
-Actualmente existen casos de uso para:
 
 ## Clubs
 
-- Collection.
-- Show.
-- Create.
-- Update.
-- Deactivate.
+Casos de uso implementados:
+
+```text
+Collection
+Show
+Create
+Update
+Deactivate
+```
+
+Rutas:
+
+```text
+GET    /api/clubs
+GET    /api/clubs/{id}
+POST   /api/clubs
+PUT    /api/clubs/{id}
+DELETE /api/clubs/{id}
+```
+
+`POST /clubs` es un caso especial y actualmente usa:
+
+```php
+->withoutMiddleware('permission')
+```
+
+porque al crear el primer Club todavía no existe una Membership de ese Club para autorizar contra ella.
 
 ## Branches
 
-- Collection por Club.
-- Show.
-- Create.
-- Update.
-- Deactivate.
-
-Las operaciones de desactivación son lógicas mediante el campo:
+Casos de uso:
 
 ```text
+Collection por Club
+Show
+Create
+Update
+Deactivate
+```
+
+Rutas principales:
+
+```text
+GET    /api/clubs/{club_id}/branches
+POST   /api/clubs/{club_id}/branches
+GET    /api/branches/{id}
+PUT    /api/branches/{id}
+DELETE /api/branches/{id}
+```
+
+Branches tienen:
+
+```text
+opening_time
+closing_time
 active
 ```
 
-en lugar de eliminar necesariamente el registro físicamente.
+Actualmente no se soportan reservas que crucen medianoche.
 
 ---
 
-# 5. Memberships
+# 7. Memberships
 
-`Membership` es una pieza central de la autorización.
+`Membership` es la base del scope de autorización.
 
-Una membership relaciona:
-
-```text
-User
-Club
-Role
-Branch opcional
-Active
-```
-
-Esquema conceptual:
+Campos conceptuales:
 
 ```text
-Membership
-├── user_id
-├── club_id
-├── rol_id
-├── branch_id nullable
-└── active
-```
-
-IMPORTANTE: el proyecto decidió usar:
-
-```text
+user_id
+club_id
 rol_id
+branch_id nullable
+active
 ```
 
-y no:
+IMPORTANTE:
 
 ```text
-role_id
+La FK se llama rol_id, NO role_id.
 ```
-
-Por eso las relaciones y foreign keys que no puedan ser inferidas
-automáticamente por Laravel deben indicar explícitamente la
-tabla/columna.
-
-Ejemplo en `permission_role`:
-
-```php
-$table->foreignId('rol_id')
-    ->constrained('roles')
-    ->cascadeOnDelete();
-```
-
----
-
-# 6. Scope de una Membership
-
-Hay dos tipos conceptuales de membership.
 
 ## Membership global
 
@@ -279,132 +337,82 @@ Hay dos tipos conceptuales de membership.
 branch_id = NULL
 ```
 
-Significa que el usuario tiene ese rol para todo el Club.
+Concede el Role para todas las Branches del Club.
+
+## Membership específica de Branch
+
+```text
+branch_id = X
+```
+
+Concede el Role solamente para esa Branch.
+
+Un usuario puede tener memberships diferentes en varias Branches del mismo Club.
 
 Ejemplo:
 
 ```text
-User
-└── Club A
-    └── Manager (GLOBAL)
+Club A
+├── Branch 2 → Manager
+└── Branch 5 → Employee
 ```
 
-Puede operar sobre todas las branches del Club, siempre sujeto a los
-permisos de su Role.
+## Conflictos
 
-## Membership por Branch
+Reglas implementadas:
 
 ```text
-branch_id = 3
+GLOBAL + cualquier branch específica del mismo User/Club = conflicto
+
+branch específica + GLOBAL del mismo User/Club = conflicto
+
+branch específica + misma branch = conflicto
+
+branch específica + otra branch distinta = permitido
 ```
 
-Ejemplo:
-
-```text
-User
-└── Club A
-    ├── Branch 3 → Manager
-    └── Branch 5 → Employee
-```
-
-El mismo usuario puede tener múltiples memberships dentro del mismo Club
-y roles distintos según la Branch.
-
----
-
-# 7. Reglas de conflicto de Memberships
-
-Se implementó `hasConflictingMembership()`.
-
-Reglas actuales:
-
-### Crear/cambiar a membership global
-
-Si `branch_id === null`, no puede coexistir otra membership del mismo
-usuario en ese Club.
-
-```text
-GLOBAL + Branch específica = conflicto
-```
-
-### Crear/cambiar a membership de Branch
-
-No puede existir:
-
-- una membership global para ese User + Club;
-- otra membership para la misma Branch.
-
-Sí se permiten memberships para diferentes branches:
-
-```text
-Branch 1 → permitido
-Branch 2 → permitido
-```
-
-Esto permite que un usuario tenga roles diferentes por sucursal.
-
----
-
-# 8. Repository de Memberships
-
-Contrato actual relevante:
+Método importante:
 
 ```php
-public function findById(int $id): ?Membership;
-
-public function findForUserAndClub(
-    int $userId,
-    int $clubId,
-    ?int $branchId = null
-): ?Membership;
-
-public function hasConflictingMembership(
-    int $userId,
-    int $clubId,
-    ?int $branchId,
-    ?int $excludeMembershipId = null
-): bool;
-
-public function findActiveForScope(
-    int $userId,
-    int $clubId,
-    ?int $branchId = null
-): ?Membership;
-
-public function findActiveForClub(
-    int $userId,
-    int $clubId
-): array;
-
-public function hasActiveMemberships(int $userId): bool;
+hasConflictingMembership(...)
 ```
 
-### Diferencia importante
+## Repository
 
-`findActiveForScope()` devuelve una sola membership compatible con el
-scope solicitado.
+Métodos relevantes:
 
-Para una Branch:
+```php
+findById(...)
+findForUserAndClub(...)
+hasConflictingMembership(...)
+findActiveForScope(...)
+findActiveForClub(...)
+hasActiveMemberships(...)
+```
+
+`findActiveForScope()`:
 
 ```text
-busca membership global
-OR
-membership específica de esa Branch
+branchId = NULL
+→ busca membership global
+
+branchId concreta
+→ acepta membership global O membership exacta de esa branch
 ```
 
-`findActiveForClub()` devuelve un `array` porque el usuario puede tener
-varias memberships activas dentro del mismo Club.
+`findActiveForClub()` devuelve:
 
-NO volver a tratar `findActiveForClub()` como si devolviera
-`?Membership`.
+```php
+array
+```
+
+NO `?Membership`.
 
 ---
 
-# 9. Roles y Permissions
+# 8. Roles y Permissions
 
-Los Roles son globales.
-
-Roles iniciales:
+Roles seed iniciales:
 
 ```text
 1 SuperAdmin
@@ -413,22 +421,44 @@ Roles iniciales:
 4 Employee
 ```
 
-Los permisos se relacionan con roles mediante:
+Relación:
 
 ```text
+roles
+permissions
 permission_role
 ```
 
-La FK del rol en este proyecto se llama:
+La FK de Role en `permission_role` usa:
 
 ```text
 rol_id
 ```
 
-La idea central es que el nombre de los permisos coincida con los
-nombres de las rutas.
+## Convención central
+
+Los nombres de permisos coinciden con los nombres de rutas administrativas.
 
 Ejemplos:
+
+```text
+club.view
+branch.update
+court.create
+court_price.update
+court_promotion.create
+reservation.cancel
+```
+
+`CheckPermission` obtiene:
+
+```php
+$request->route()?->getName()
+```
+
+y utiliza ese nombre como permiso requerido.
+
+## Permisos actuales
 
 ```text
 club.view
@@ -445,535 +475,212 @@ membership.create
 membership.change_status
 membership.change_role
 membership.change_branch
+
+court.view
+court.create
+court.update
+court.deactivate
+
+court_price.view
+court_price.create
+court_price.update
+court_price.change_status
+
+court_promotion.view
+court_promotion.create
+court_promotion.update
+court_promotion.change_status
+
+reservation.create
+reservation.view
+reservation.cancel
+reservation.confirm
 ```
 
-Esto permite que `CheckPermission` utilice:
+## Roles actuales
 
-```php
-$request->route()?->getName()
+### SuperAdmin
+
+Recibe todos los permisos existentes (`*`).
+
+### Admin
+
+Administración amplia de Club/Branches/Memberships/Courts/Pricing/Promotions/Reservations.
+
+### Manager
+
+Puede operar Courts, Pricing, Promotions y Reservations, con menos acciones destructivas que Admin.
+
+### Employee
+
+Principalmente lectura + operación básica.
+
+Actualmente tiene:
+
+```text
+club.view
+branch.view
+court.view
+court_price.view
+court_promotion.view
+reservation.create
+reservation.view
 ```
 
-como nombre del permiso requerido.
+No tiene por defecto:
+
+```text
+reservation.cancel
+reservation.confirm
+```
 
 ---
 
-# 10. Convención especial `.collection`
+# 9. Convención especial `.collection`
 
-Las rutas que devuelven colecciones utilizan:
-
-```text
-*.collection
-```
-
-Ejemplos actuales:
-
-```php
-->name('club.collection')
-->name('branch.collection')
-```
-
-Estas rutas NO se autorizan exactamente igual que una operación
-individual.
-
-Razón:
+Las rutas con nombre terminado en:
 
 ```text
-GET /clubs
+.collection
 ```
 
-no tiene un `club_id` concreto.
+NO se almacenan como permisos individuales en la tabla `permissions`.
 
-Y:
+Ejemplos:
 
 ```text
-GET /clubs/{club_id}/branches
+club.collection
+branch.collection
+court.collection
+court_price.collection
+court_promotion.collection
+reservation.collection
 ```
 
-debe devolver solamente las Branches que están dentro del scope del
-usuario.
-
-Por eso `CheckPermission` detecta:
+`CheckPermission` detecta:
 
 ```php
 str_ends_with($routeName, '.collection')
 ```
 
-y deriva hacia autorización específica de colecciones.
+y aplica autorización de scope especial.
+
+Esto separa:
+
+```text
+autorización
+≠
+filtrado de resultados
+```
+
+Una colección autorizada igualmente debe filtrar lo que el usuario puede ver.
 
 ---
 
-# 11. CheckPermission
+# 10. AuthorizationService
 
-Middleware central:
-
-```text
-App\Http\Middleware\CheckPermission
-```
-
-Responsabilidades actuales:
-
-1.  Obtener usuario autenticado.
-2.  Obtener nombre de ruta.
-3.  Detectar rutas `.collection`.
-4.  Resolver el scope de Club / Branch / Membership.
-5.  Delegar la autorización a `AuthorizationService`.
-
-Resolvers actuales:
-
-```text
-resolveClubScope()
-resolveBranchScope()
-resolveMembershipScope()
-```
-
-Recursos soportados actualmente:
-
-```php
-match ($resource) {
-    'club' => ...
-    'branch' => ...
-    'membership' => ...
-}
-```
-
-Cuando agreguemos nuevos recursos, por ejemplo Courts, habrá que evaluar
-si necesitan un nuevo resolver.
-
----
-
-# 12. AuthorizationService
-
-Servicio:
+Archivo:
 
 ```text
 App\Application\Authorization\AuthorizationService
 ```
 
-Tiene dos conceptos principales.
-
-## Autorización por scope
+Métodos principales:
 
 ```php
-can(
-    int $userId,
-    int $clubId,
-    ?int $branchId,
-    string $permission
-): bool
-```
-
-Utiliza:
-
-```text
-findActiveForScope()
-```
-
-Sirve para operaciones concretas sobre recursos que pertenecen a un
-Club/Branch.
-
-## Autorización dentro de un Club
-
-```php
-canInClub(
-    int $userId,
-    int $clubId,
-    string $permission
-): bool
-```
-
-Utiliza:
-
-```text
-findActiveForClub()
-```
-
-Como `findActiveForClub()` devuelve varias memberships, se recorren
-todas y alcanza con que alguna membership activa tenga un Role con el
-permiso solicitado.
-
-Conceptualmente:
-
-```text
-Membership 1 → Role Manager  → permiso X ✅
-Membership 2 → Role Employee → permiso X ❌
-
-Resultado → permitido
-```
-
-También existe:
-
-```php
+can(...)
+authorize(...)
+canInClub(...)
 authorizeInClub(...)
 ```
 
-que lanza `AuthorizationDeniedException` si `canInClub()` devuelve
-`false`.
+## `can()`
 
----
-
-# 13. Caso especial `club.view`
-
-Se decidió que una persona con membership limitada a una Branch sí pueda
-consultar información general del Club al que pertenece.
-
-Por eso:
+Usa:
 
 ```text
-club.view
+MembershipRepository::findActiveForScope()
 ```
 
-usa autorización a nivel Club mediante `authorizeInClub()` y no exige
-necesariamente una membership global.
+para validar un recurso dentro de un Club/Branch concreto.
 
-En cambio, acciones que afectan a TODO el Club, como:
+## `canInClub()`
+
+Usa:
+
+```text
+MembershipRepository::findActiveForClub()
+```
+
+Recorre todas las memberships activas del usuario dentro del Club y alcanza con que una tenga un Role con el permiso requerido.
+
+## Caso especial `club.view`
+
+Una membership específica de Branch puede ver la información general del Club padre.
+
+Por eso `club.view` usa:
+
+```text
+authorizeInClub()
+```
+
+No implica que ese usuario pueda ejecutar:
 
 ```text
 club.update
 club.deactivate
 ```
 
-deben respetar el scope correspondiente y no deberían ser concedidas
-simplemente por pertenecer a una Branch.
+---
+
+# 11. CheckPermission
+
+Middleware:
+
+```text
+App\Http\Middleware\CheckPermission
+```
+
+Actualmente soporta resolvers para:
+
+```text
+club
+branch
+membership
+court
+court_price
+court_promotion
+reservation
+```
+
+También soporta collections para:
+
+```text
+club.collection
+branch.collection
+court.collection
+court_price.collection
+court_promotion.collection
+reservation.collection
+```
+
+Para Reservation, el scope se resuelve conceptualmente:
+
+```text
+Reservation
+→ Court
+→ Branch
+→ Club
+→ Membership
+→ Role
+→ Permission
+```
+
+La autorización de `reservation.collection` valida scope pero no requiere que exista un permiso llamado `reservation.collection` en DB.
 
 ---
 
-# 14. Collections y filtrado
-
-La autorización de una colección no significa devolver todos los
-registros.
-
-Ejemplo:
-
-```text
-GET /clubs/{club_id}/branches
-```
-
-Si el usuario tiene:
-
-```text
-Branch 1
-Branch 3
-```
-
-debe obtener:
-
-```text
-Branch 1
-Branch 3
-```
-
-y no todas las Branches del Club.
-
-Si tiene membership global:
-
-```text
-branch_id = NULL
-```
-
-puede obtener todas las Branches del Club.
-
-Esta lógica se aplica en el caso de uso/repository, además de la
-autorización del middleware.
-
----
-
-# 15. Atención: detalle pendiente detectado en CheckPermission (YA CORREGIDO)
-
-Actualmente `MembershipRepository::findActiveForClub()` devuelve:
-
-```php
-array
-```
-
-pero en `CheckPermission::authorizeBranchCollection()` todavía aparece
-una comprobación del estilo:
-
-```php
-$membership = $this->memberships->findActiveForClub(...);
-
-if ($membership === null) {
-    throw new AuthorizationDeniedException();
-}
-```
-
-Esto quedó desactualizado después de cambiar el repository para soportar
-múltiples memberships.
-
-Debe revisarse y utilizar una comprobación compatible con array, por
-ejemplo conceptualmente:
-
-```php
-if ($memberships === []) {
-    throw new AuthorizationDeniedException();
-}
-```
-
-Además conviene renombrar la variable a `$memberships`.
-
-Este punto queda marcado como pendiente/revisión.
-
----
-
-# 16. Create Club
-
-La ruta de creación de Club quedó como caso especial:
-
-```php
-Route::post('', CreateClubController::class)
-    ->withoutMiddleware('permission')
-    ->name('club.create');
-```
-
-La razón es que para crear el primer Club todavía no existe una
-Membership dentro de ese Club contra la cual autorizar.
-
-Este caso debe mantenerse presente cuando se revise el modelo de
-permisos globales/SuperAdmin.
-
----
-
-# 17. Excepciones
-
-Existe una excepción base:
-
-```php
-App\Shared\Exceptions\DomainException
-```
-
-Las excepciones específicas del dominio extienden de ella.
-
-Se decidió que las excepciones de dominio puedan tener definido su
-código HTTP para traducirse a respuestas API.
-
-También existe:
-
-```text
-AuthorizationDeniedException
-```
-
-para representar acceso denegado.
-
-La configuración global de excepciones maneja respuestas JSON para:
-
-- AuthenticationException.
-- ValidationException.
-- Domain/Authorization exceptions según configuración.
-
-Objetivo: evitar repetir `try/catch` innecesarios en todos los
-Controllers cuando el error puede resolverse globalmente.
-
----
-
-# 18. Factories
-
-Ya existen factories para:
-
-```text
-User
-Club
-Branch
-Membership
-Role
-Permission
-PermissionRole
-```
-
-Estados/helpers importantes:
-
-## ClubFactory
-
-```php
-->inactive()
-```
-
-## BranchFactory
-
-```php
-->inactive()
-```
-
-## MembershipFactory
-
-```php
-->global()
-->inactive()
-->forBranch($branch)
-```
-
-Ejemplo recomendado:
-
-```php
-Membership::factory()
-    ->for($user)
-    ->for($club)
-    ->for($role)
-    ->forBranch($branch)
-    ->createOne();
-```
-
-Membership global:
-
-```php
-Membership::factory()
-    ->for($user)
-    ->for($club)
-    ->for($role)
-    ->global()
-    ->createOne();
-```
-
-Role con permiso:
-
-```php
-Role::factory()
-    ->withPermission('branch.update')
-    ->createOne();
-```
-
----
-
-# 19. Testing
-
-Se empezó a incorporar testing desde cero usando Feature Tests.
-
-Se usa:
-
-```php
-use RefreshDatabase;
-```
-
-Los tests corren con SQLite en memoria.
-
-Configuración esperada:
-
-```text
-DB_CONNECTION=sqlite
-DB_DATABASE=:memory:
-```
-
-Fue necesario habilitar en PHP CLI:
-
-```text
-pdo_sqlite
-sqlite3
-```
-
-## Tests existentes
-
-```text
-tests/Feature/Auth/RegisterTest.php
-tests/Feature/Auth/LoginTest.php
-tests/Feature/Auth/LogoutTest.php
-
-tests/Feature/Authorization/BranchAuthorizationTest.php
-
-tests/Feature/Clubs/ClubTest.php
-tests/Feature/Branches/BranchTest.php
-```
-
-Los nombres de las funciones de tests se escriben en español:
-
-```php
-test_usuario_puede_...
-test_usuario_no_puede_...
-test_membresia_global_...
-```
-
-El código, clases y conceptos técnicos siguen mayormente en inglés.
-
----
-
-# 20. Reglas de autorización ya testeadas
-
-Entre los escenarios trabajados están:
-
-```text
-Membership global
-→ puede ver todas las Branches del Club.
-
-Membership de Branch
-→ solamente ve las Branches asignadas.
-
-Dos memberships de Branch
-→ ve ambas Branches.
-
-Scope correcto + permiso
-→ operación permitida.
-
-Scope incorrecto + permiso
-→ 403.
-
-Scope correcto + sin permiso
-→ 403.
-
-Membership inactiva
-→ no concede acceso.
-
-Membership limitada a Branch
-→ no permite actualizar todo el Club.
-
-Membership global + club.update
-→ permite actualizar el Club.
-```
-
-También se agregaron tests funcionales para Clubs y Branches, además de
-Auth.
-
-Siempre ejecutar al terminar cambios relevantes:
-
-```bash
-php artisan test
-```
-
-La regla es mantener toda la suite en verde antes de avanzar.
-
----
-
-# 21. Convenciones para escribir tests
-
-Preferir:
-
-```php
-/** @var User $user */
-$user = User::factory()->createOne();
-```
-
-cuando el IDE no infiere correctamente el tipo concreto.
-
-Los tests deberían seguir mentalmente:
-
-```text
-Arrange
-↓
-Act
-↓
-Assert
-```
-
-Las factories preparan el escenario; los assertions verifican
-comportamiento.
-
-No probar solamente status HTTP. Cuando corresponda, comprobar también
-estado persistido:
-
-```php
-$this->assertDatabaseHas(...)
-$this->assertDatabaseMissing(...)
-$this->assertDatabaseCount(...)
-```
-
-Ejemplo: un login fallido no solamente debe responder 401; tampoco debe
-crear un token.
-
----
-
-# 22. Próximo módulo: Courts
-
-El siguiente módulo acordado es:
-
-```text
-Courts / Canchas
-```
+# 12. Courts / Canchas
 
 Jerarquía:
 
@@ -987,190 +694,1519 @@ Club
         └── TipoCourt
 ```
 
-Estructura prevista:
-
-```text
-Domain/Courts/
-├── Entities/
-│   └── Court.php
-├── Repositories/
-│   └── CourtRepository.php
-└── Exceptions/
-
-Application/Courts/
-├── Create/
-├── Show/
-├── Collection/
-├── Update/
-└── Deactivate/
-```
-
-Campos iniciales propuestos:
+Court contiene actualmente:
 
 ```text
 id
 branch_id
+tipo_court_id
 name
 active
 ```
 
-Permisos propuestos:
+Casos de uso:
 
 ```text
-court.view
-court.create
-court.update
-court.deactivate
+Collection por Branch
+Show
+Create
+Update
+Deactivate
 ```
 
-La autorización deberá reutilizar el modelo existente:
+Rutas:
 
 ```text
-User
-→ Membership
-→ Club/Branch scope
-→ Role
-→ Permission
+GET    /api/branches/{branch_id}/courts
+POST   /api/branches/{branch_id}/courts
+GET    /api/courts/{id}
+PUT    /api/courts/{id}
+DELETE /api/courts/{id}
+```
+
+`CourtRepository` incluye actualmente:
+
+```php
+findById(int $id): ?Court
+findByBranchId(int $branchId): array
+save(Court $court): Court
+update(Court $court): Court
+findActiveByBranchAndTipo(int $branchId, int $tipoCourtId): array
+findByIdForUpdate(int $id): ?Court
+```
+
+`findByIdForUpdate()` usa Eloquent:
+
+```php
+->lockForUpdate()
+```
+
+Esto es usado por creación de reservas para evitar dobles reservas concurrentes sobre la misma cancha.
+
+---
+
+# 13. Intervalos por tipo de cancha
+
+Tabla:
+
+```text
+interval_time_tipo_court
+```
+
+Clave conceptual:
+
+```text
+branch_id + tipo_court_id
+```
+
+Valor:
+
+```text
+interval_minutes
+```
+
+Repository:
+
+```php
+findIntervalMinutes(
+    int $branchId,
+    int $tipoCourtId
+): ?int;
+```
+
+El intervalo controla la grilla posible de inicio de una reserva.
+
+Ejemplo:
+
+```text
+opening_time = 08:00
+interval_minutes = 30
+
+inicios válidos:
+08:00
+08:30
+09:00
+09:30
+...
+```
+
+---
+
+# 14. Pricing
+
+Pricing ya está implementado.
+
+Tablas principales:
+
+```text
+court_prices
+court_price_rules
+```
+
+## CourtPrice
+
+Precio base por:
+
+```text
+branch_id + tipo_court_id
+```
+
+Campos principales:
+
+```text
+branch_id
+tipo_court_id
+price
+active
+```
+
+El precio representa una tarifa por **60 minutos**.
+
+## CourtPriceRule / promociones
+
+Campos:
+
+```text
+court_price_id
+name
+price
+day_of_week nullable
+specific_date nullable
+start_time nullable
+end_time nullable
+priority
+starts_at nullable
+ends_at nullable
+active
+```
+
+Permite:
+
+- promoción por día de semana;
+- fecha específica;
+- rango horario;
+- ventana de vigencia;
+- prioridad;
+- activación/desactivación.
+
+Cuando coinciden varias promociones gana la de mayor:
+
+```text
+priority
+```
+
+El final del rango horario se trata como límite exclusivo para resolver la tarifa en ese instante.
+
+---
+
+# 15. PriceResolver
+
+Archivo:
+
+```text
+App\Application\Pricing\Resolver\PriceResolver
+```
+
+Flujo actual:
+
+```text
+buscar precio base activo
+↓
+buscar reglas/promociones activas
+↓
+recorrer la reserva minuto a minuto
+↓
+resolver qué regla aplica en cada minuto
+↓
+elegir la de mayor prioridad
+↓
+agrupar minutos consecutivos con misma tarifa/regla
+↓
+calcular subtotal proporcional
+↓
+devolver total + segmentos
+```
+
+El cálculo evita usar `float` directamente para dinero.
+
+Convierte a centavos y luego vuelve a string decimal.
+
+Ejemplo:
+
+```text
+$18.000/hora × 30 minutos / 60
+= $9.000
+```
+
+Esto hace que reservas de 90, 120 minutos, etc. se cobren proporcionalmente y puedan cruzar promociones.
+
+## Resultado
+
+`ReservationPrice` contiene:
+
+```text
+total
+segments[]
+```
+
+Cada `PriceSegment` contiene:
+
+```text
+startsAt
+endsAt
+hourlyPrice
+subtotal
+ruleId nullable
+ruleName nullable
+```
+
+---
+
+# 16. Rutas de Pricing
+
+Por Branch:
+
+```text
+GET  /api/branches/{branch_id}/prices
+POST /api/branches/{branch_id}/prices
+```
+
+Individuales:
+
+```text
+GET   /api/court_prices/{id}
+PUT   /api/court_prices/{id}
+PATCH /api/court_prices/{id}/status
+```
+
+Promociones:
+
+```text
+GET  /api/court_prices/{court_price_id}/promotions
+POST /api/court_prices/{court_price_id}/promotions
+
+GET   /api/court_promotions/{id}
+PUT   /api/court_promotions/{id}
+PATCH /api/court_promotions/{id}/status
+```
+
+---
+
+# 17. Reservations — estado actual
+
+Reservations ya está implementado y es uno de los módulos más avanzados del proyecto.
+
+Tablas:
+
+```text
+reservations
+reservation_price_segments
+```
+
+## `reservations`
+
+Campos:
+
+```text
+id
+court_id
+customer_user_id nullable
+created_by_user_id nullable
+guest_name nullable
+guest_email nullable
+guest_phone nullable
+starts_at
+ends_at
+total_price
+status
+public_token UUID unique
+notes nullable
+cancelled_at nullable
+expires_at nullable
+created_at
+updated_at
+```
+
+Índices actuales:
+
+```text
+(court_id, starts_at, ends_at)
+(customer_user_id, starts_at)
+```
+
+## `reservation_price_segments`
+
+Snapshot histórico del precio aplicado.
+
+Campos:
+
+```text
+reservation_id
+starts_at
+ends_at
+hourly_price
+subtotal
+court_price_rule_id nullable
+rule_name nullable
+```
+
+Objetivo:
+
+```text
+Cambiar un precio/promoción en el futuro
+NO modifica el precio histórico de una reserva ya creada.
+```
+
+---
+
+# 18. Identidad del cliente en Reservation
+
+Una Reservation puede pertenecer a:
+
+## Cliente registrado
+
+```text
+customer_user_id != NULL
+guest_* = NULL
+```
+
+## Invitado
+
+```text
+customer_user_id = NULL
+guest_name obligatorio
+email o phone exigido por GuestReservationRequest
+```
+
+La Entity impide mezclar simultáneamente:
+
+```text
+cliente registrado + datos de guest
+```
+
+`created_by_user_id` representa quién ejecutó la creación.
+
+Ejemplos:
+
+```text
+cliente reserva para sí mismo:
+customer_user_id = 25
+created_by_user_id = 25
+
+personal crea para cliente:
+customer_user_id = 25
+created_by_user_id = ID del empleado
+
+reserva pública guest:
+customer_user_id = NULL
+created_by_user_id = NULL
+```
+
+---
+
+# 19. Estados de Reservation
+
+Enum actual:
+
+```text
+PENDING
+CONFIRMED
+CANCELLED
+COMPLETED
+EXPIRED
+```
+
+Transiciones principales en la Entity:
+
+```text
+PENDING → CONFIRMED
+PENDING → EXPIRED
+PENDING/CONFIRMED → CANCELLED
+CONFIRMED → COMPLETED
+```
+
+Reglas importantes:
+
+- una reserva no puede confirmarse si ya expiró;
+- solamente una `PENDING` puede confirmarse;
+- solamente una `PENDING` puede expirar;
+- una `COMPLETED` no puede cancelarse;
+- volver a cancelar una `CANCELLED` lanza excepción.
+
+---
+
+# 20. Qué reservas bloquean disponibilidad
+
+Semántica actual del repository:
+
+```text
+CONFIRMED
+→ bloquea siempre
+
+PENDING con expires_at > now()
+→ bloquea
+
+PENDING vencida
+→ NO bloquea, incluso antes de que corra el Job
+
+CANCELLED
+COMPLETED
+EXPIRED
+→ no bloquean
+```
+
+Condición de overlap:
+
+```text
+existing.starts_at < requested.ends_at
+AND
+existing.ends_at > requested.starts_at
+```
+
+Esto permite adyacencia:
+
+```text
+14:00 → 15:00
+15:00 → 16:00
+```
+
+sin considerarlas superpuestas.
+
+---
+
+# 21. ReservationValidator
+
+Archivo:
+
+```text
+App\Application\Reservations\Validation\ReservationValidator
+```
+
+Valida actualmente:
+
+1. `ends_at > starts_at`.
+2. la reserva debe ser futura.
+3. no puede cruzar de día.
+4. debe estar completamente dentro de `opening_time` / `closing_time`.
+5. debe existir `interval_minutes` para Branch + TipoCourt.
+6. el inicio debe estar alineado con la grilla del intervalo desde la apertura.
+7. duración mínima de **60 minutos**.
+8. duración múltiplo de `interval_minutes`.
+9. no puede existir overlap con una reserva que bloquee.
+
+Ejemplo con intervalo de 30:
+
+```text
+30 min   ❌
+60 min   ✅
+90 min   ✅
+120 min  ✅
+```
+
+Ejemplo con intervalo de 60:
+
+```text
+60 min   ✅
+90 min   ❌
+120 min  ✅
+```
+
+IMPORTANTE: actualmente el sistema decidió mantener la duración como múltiplo del intervalo.
+
+---
+
+# 22. Creación de Reservation y concurrencia
+
+Caso de uso:
+
+```text
+App\Application\Reservations\Create\CreateReservationHandler
+```
+
+Flujo actual:
+
+```text
+DB::transaction(attempts: 3)
+↓
+CourtRepository::findByIdForUpdate()
+↓
+SELECT ... FOR UPDATE sobre Court
+↓
+validar Court activa
+↓
+buscar y validar Branch
+↓
+ReservationValidator dentro del lock
+↓
+PriceResolver
+↓
+determinar PENDING / CONFIRMED
+↓
+crear Reservation
+↓
+persistir Reservation
+↓
+persistir snapshot reservation_price_segments
+↓
+COMMIT
+↓
+se libera lock
+```
+
+La validación de overlap ocurre **después** de tomar el lock.
+
+Objetivo:
+
+```text
+Request A y Request B no pueden crear simultáneamente
+la misma franja de la misma Court viendo ambos disponibilidad libre.
+```
+
+Laravel usa:
+
+```php
+DB::transaction(..., attempts: 3)
+```
+
+para poder reintentar ciertos deadlocks.
+
+SQLite de tests no reproduce realmente el locking de producción; la protección real está pensada para MySQL/PostgreSQL.
+
+---
+
+# 23. PENDING y expiración
+
+Una reserva creada como `PENDING` recibe actualmente:
+
+```text
+expires_at = now() + 15 minutos
+```
+
+Una reserva creada `CONFIRMED` recibe:
+
+```text
+expires_at = NULL
+```
+
+Job:
+
+```text
+App\Jobs\ExpirePendingReservationsJob
+```
+
+Busca reservas `PENDING` vencidas y ejecuta:
+
+```php
+$reservation->expire();
+```
+
+Scheduler:
+
+```php
+Schedule::job(
+    new ExpirePendingReservationsJob()
+)->everyMinute();
+```
+
+ubicado en:
+
+```text
+routes/console.php
+```
+
+En producción debe existir un runner de Scheduler, por ejemplo:
+
+```text
+php artisan schedule:run
+```
+
+por cron cada minuto, o `schedule:work` según el entorno.
+
+IMPORTANTE: la disponibilidad no depende de esperar al Job; un `PENDING` vencido deja de bloquear en la query de overlap inmediatamente.
+
+---
+
+# 24. Tipos de creación de Reservation
+
+Existen tres flujos.
+
+## A. Personal del club
+
+Ruta:
+
+```text
+POST /api/courts/{court_id}/reservations
+```
+
+Protección:
+
+```text
+auth:sanctum
++
+permission middleware
++
+reservation.create
++
+scope de Court
+```
+
+Request:
+
+```text
+customer_user_id opcional
+guest_name/email/phone opcionales según modalidad
+starts_at
+ends_at
+notes
+confirmed boolean opcional
+```
+
+El personal puede elegir crear:
+
+```text
+PENDING
+CONFIRMED
+```
+
+mediante `confirmed`.
+
+## B. Cliente autenticado
+
+Ruta:
+
+```text
+POST /api/courts/{court_id}/book
+```
+
+No pasa por permiso administrativo.
+
+Reserva solamente para sí mismo:
+
+```text
+customer_user_id = auth()->id()
+created_by_user_id = auth()->id()
+confirmed = false
+```
+
+`confirmed` está prohibido en el Request.
+
+La reserva nace:
+
+```text
+PENDING
+```
+
+## C. Guest público
+
+Ruta:
+
+```text
+POST /api/public/courts/{court_id}/book
+```
+
+No requiere autenticación.
+
+Requiere:
+
+```text
+name
+email o phone al menos uno
+starts_at
+ends_at
+notes opcional
+```
+
+`confirmed` está prohibido.
+
+La reserva nace:
+
+```text
+PENDING
+```
+
+Además se genera:
+
+```text
+public_token UUID
+```
+
+---
+
+# 25. Confirmación y cancelación administrativa
+
+Rutas:
+
+```text
+GET   /api/reservations/{id}
+PATCH /api/reservations/{id}/cancel
+PATCH /api/reservations/{id}/confirm
+```
+
+Todas pasan por:
+
+```text
+auth:sanctum
+permission
+scope de Reservation
+```
+
+Permisos:
+
+```text
+reservation.view
+reservation.cancel
+reservation.confirm
+```
+
+Nota estructural actual:
+
+Los archivos:
+
+```text
+ConfirmReservationCommand.php
+ConfirmReservationHandler.php
+```
+
+están físicamente dentro de:
+
+```text
+app/Domain/Reservations/Confirm/
+```
+
+pero su namespace es:
+
+```php
+App\Application\Reservations\Confirm
+```
+
+Por PSR-4 esto es una inconsistencia de ubicación que conviene corregir en algún momento moviéndolos a:
+
+```text
+app/Application/Reservations/Confirm/
+```
+
+sin cambiar su namespace.
+
+No moverlos automáticamente sin revisar que la suite siga en verde.
+
+---
+
+# 26. Availability — implementación actual
+
+Existen dos endpoints públicos.
+
+## Por Court
+
+```text
+GET /api/public/courts/{court_id}/availability
+```
+
+Parámetros:
+
+```text
+date=YYYY-MM-DD                     requerido
+duration_minutes=60|90|120...       opcional, default 60
+```
+
+## Por Branch + TipoCourt
+
+```text
+GET /api/public/branches/{branch_id}/availability
+```
+
+Parámetros:
+
+```text
+tipo_court_id                       requerido
+date=YYYY-MM-DD                     requerido
+duration_minutes                    opcional, default 60
+start_time=HH:mm:ss                 opcional
+end_time=HH:mm:ss                   opcional
+```
+
+La búsqueda por tipo devuelve solamente Courts activas de esa Branch y TipoCourt.
+
+---
+
+# 27. Diferencia entre `interval_minutes` y `duration_minutes`
+
+Esta regla fue implementada el 27/08/2026 y es importante conservarla.
+
+## `interval_minutes`
+
+Controla cada cuánto puede **empezar** una reserva.
+
+Ejemplo:
+
+```text
+interval_minutes = 30
+
+08:00
+08:30
+09:00
+09:30
+...
+```
+
+## `duration_minutes`
+
+Controla cuánto tiempo quiere jugar el usuario.
+
+Reglas actuales:
+
+```text
+default = 60
+mínimo = 60
+debe ser múltiplo de interval_minutes
 ```
 
 Ejemplo:
 
 ```text
-POST /branches/{branch_id}/courts
+interval_minutes = 30
+duration_minutes = 90
+```
 
-requiere:
-membership con scope sobre esa Branch
+Slots generados:
+
+```text
+08:00 → 09:30
+08:30 → 10:00
+09:00 → 10:30
+09:30 → 11:00
+...
+```
+
+La lógica correcta es:
+
+```text
+slotEnd = slotStart + duration_minutes
+cursor  = cursor + interval_minutes
+```
+
+NO avanzar el cursor usando `duration_minutes`.
+
+Cada slot verifica overlap usando todo el rango solicitado.
+
+Si el `slotEnd` supera el cierre de la Branch, ese slot no se genera.
+
+---
+
+# 28. DTOs de Availability
+
+`CourtAvailabilityDto` devuelve:
+
+```text
+court_id
+date
+interval_minutes
+duration_minutes
+slots[]
+```
+
+Cada slot:
+
+```text
+starts_at
+ends_at
+available
+```
+
+`TipoCourtAvailabilityDto` devuelve:
+
+```text
+branch_id
+tipo_court_id
+date
+interval_minutes
+duration_minutes
+courts[]
+```
+
+Cada Court contiene sus slots.
+
+---
+
+# 29. ReservationRepository
+
+Contrato actual:
+
+```php
+findById(int $id): ?Reservation
+
+findByPublicToken(string $token): ?Reservation
+
+findByCourt(int $courtId): array
+
+hasOverlap(
+    int $courtId,
+    DateTimeImmutable $startsAt,
+    DateTimeImmutable $endsAt,
+    ?int $excludeReservationId = null
+): bool
+
+save(Reservation $reservation): Reservation
+
+update(Reservation $reservation): Reservation
+
+savePriceSegments(int $reservationId, array $segments): void
+
+findPriceSegments(int $reservationId): array
+
+findBlockingReservationsBetween(
+    int $courtId,
+    DateTimeImmutable $startsAt,
+    DateTimeImmutable $endsAt
+): array
+
+findExpiredPending(): array
+```
+
+`findByPublicToken()` ya existe aunque todavía no hay endpoints públicos de consulta/cancelación por token.
+
+---
+
+# 30. Rutas actuales completas a nivel funcional
+
+## Públicas
+
+```text
+POST /api/auth/login
+POST /api/auth/register
+
+POST /api/public/courts/{court_id}/book
+GET  /api/public/courts/{court_id}/availability
+GET  /api/public/branches/{branch_id}/availability
+```
+
+## Auth
+
+```text
+POST /api/auth/logout
+GET  /api/user
+```
+
+## Clubs
+
+```text
+GET    /api/clubs
+GET    /api/clubs/{id}
+POST   /api/clubs
+PUT    /api/clubs/{id}
+DELETE /api/clubs/{id}
+```
+
+## Branches
+
+```text
+GET  /api/clubs/{club_id}/branches
+POST /api/clubs/{club_id}/branches
+
+GET    /api/branches/{id}
+PUT    /api/branches/{id}
+DELETE /api/branches/{id}
+```
+
+## Memberships
+
+```text
+POST  /api/memberships
+PATCH /api/memberships/{id}/status
+PATCH /api/memberships/{id}/role
+PATCH /api/memberships/{id}/branche
+```
+
+Nota: la ruta actual usa literalmente `branche` en singular incorrecto:
+
+```text
+/{id}/branche
+```
+
+No cambiarla sin revisar consumidores/tests.
+
+## Courts
+
+```text
+GET  /api/branches/{branch_id}/courts
+POST /api/branches/{branch_id}/courts
+
+GET    /api/courts/{id}
+PUT    /api/courts/{id}
+DELETE /api/courts/{id}
+```
+
+## Pricing
+
+```text
+GET  /api/branches/{branch_id}/prices
+POST /api/branches/{branch_id}/prices
+
+GET   /api/court_prices/{id}
+PUT   /api/court_prices/{id}
+PATCH /api/court_prices/{id}/status
+
+GET  /api/court_prices/{court_price_id}/promotions
+POST /api/court_prices/{court_price_id}/promotions
+
+GET   /api/court_promotions/{id}
+PUT   /api/court_promotions/{id}
+PATCH /api/court_promotions/{id}/status
+```
+
+## Reservations
+
+```text
+GET  /api/courts/{court_id}/reservations
+POST /api/courts/{court_id}/reservations
+
+POST /api/courts/{court_id}/book
+
+GET   /api/reservations/{id}
+PATCH /api/reservations/{id}/cancel
+PATCH /api/reservations/{id}/confirm
+```
+
+---
+
+# 31. Factories actuales
+
+Existen factories para:
+
+```text
+User
+Club
+Branch
+Membership
+Role
+Permission
+PermissionRole
+TipoCourt
+Court
+CourtPrice
+CourtPriceRule
+Reservation
+ReservationPriceSegment
+```
+
+Preferir en tests:
+
+```php
+$model = Model::factory()->createOne();
+```
+
+cuando se quiera evitar inferencia `Model|Collection` del IDE.
+
+---
+
+# 32. Seeders
+
+Seeders actuales:
+
+```text
+RoleSeeder
+PermissionSeeder
+RolePermissionSeeder
+TipoCourtSeeder
+AlejoDemoSeeder
+MassiveDemoDataSeeder
+```
+
+`DatabaseSeeder` ejecuta:
+
+```text
+RoleSeeder
+PermissionSeeder
+RolePermissionSeeder
+TipoCourtSeeder
+AlejoDemoSeeder
+MassiveDemoDataSeeder
+```
+
+También quedaron archivos viejos:
+
+```text
+AlejoDemoSeederViejo.php
+MassiveDemoDataSeederviejo.php
+```
+
+No son llamados por `DatabaseSeeder`.
+
+## Demo data
+
+Los seeders de demo crean escenarios con:
+
+- Clubs.
+- Branches.
+- Courts.
+- Tipos de Court.
+- Intervalos.
+- CourtPrices.
+- promociones.
+- Users.
+- Memberships.
+- Reservations.
+- ReservationPriceSegments.
+
+Se respetan las reglas principales de conflictos de Memberships en la generación de datos.
+
+---
+
+# 33. Tests actuales
+
+Feature Tests:
+
+```text
+tests/Feature/Auth/LoginTest.php
+tests/Feature/Auth/LogoutTest.php
+tests/Feature/Auth/RegisterTest.php
+
+tests/Feature/Authorization/BranchAuthorizationTest.php
+
+tests/Feature/Branches/BranchTest.php
+tests/Feature/Clubs/ClubTest.php
+
+tests/Feature/Pricing/CourtPriceTest.php
+tests/Feature/Pricing/CourtPromotionTest.php
+
+tests/Feature/Reservations/AvailabilityTest.php
+tests/Feature/Reservations/ReservationExpirationTest.php
+tests/Feature/Reservations/ReservationPricingTest.php
+tests/Feature/Reservations/ReservationTest.php
+```
+
+Unit Tests:
+
+```text
+tests/Unit/Pricing/CourtPriceRuleTest.php
+tests/Unit/Pricing/PriceResolverTest.php
+```
+
+## Escenarios importantes cubiertos en Reservations
+
+- personal con scope + permiso crea reserva;
+- scope incorrecto devuelve denegación;
+- cliente autenticado reserva para sí mismo;
+- guest reserva sin autenticación;
+- guest requiere email o teléfono;
+- overlap bloquea;
+- cancelada no bloquea;
+- duración debe respetar intervalo;
+- inicio debe estar alineado con grilla;
+- cancelación con permiso;
+- cancelación sin permiso;
+- guest no puede forzar `confirmed`;
+- cliente no puede forzar `confirmed`;
+- availability por Court;
+- availability por TipoCourt;
+- Court inactiva no aparece en búsqueda por tipo;
+- snapshot de precio base;
+- promoción completa;
+- reserva que entra/sale de promoción;
+- cambio posterior de promoción no modifica historial;
+- `PENDING` vigente bloquea;
+- `PENDING` vencida no bloquea;
+- Job expira pendientes vencidas;
+- Job no expira pendientes vigentes.
+
+## Pricing Unit Tests
+
+Cubren:
+
+- precio base;
+- promociones;
+- límites de horario;
+- prorrateo parcial;
+- múltiples promociones;
+- prioridad;
+- ausencia/inactividad de precio base;
+- reglas por weekday;
+- specific date;
+- horario;
+- vigencia;
+- active/inactive.
+
+La regla del proyecto sigue siendo:
+
+```bash
+php artisan test
+```
+
+antes de cerrar cambios importantes.
+
+Último estado informado por el usuario al 27/08/2026: **todo funcionando correctamente** después del cambio de duración configurable en Availability.
+
+El ZIP entregado para actualizar este contexto no incluye `vendor/`, por lo que esta actualización inspeccionó el código pero no volvió a ejecutar la suite dentro del entorno de revisión.
+
+---
+
+# 34. Availability: tests que conviene agregar
+
+La implementación de `duration_minutes` ya está en código.
+
+Los tests actuales de `AvailabilityTest` cubren disponibilidad general, pero conviene dejar explícitamente cubiertos en una próxima iteración:
+
+```text
+sin duration_minutes → usa 60
+
+duration_minutes=60 → OK
+
+duration_minutes=90 con interval 30 → OK
+
+duration_minutes=120 → OK
+
+duration_minutes<60 → 422
+
+duration_minutes no múltiplo del intervalo → error
+
+slotEnd usa duration_minutes
+cursor sigue usando interval_minutes
+```
+
+Esto es una mejora de cobertura, no una indicación de que la implementación actual esté fallando.
+
+---
+
+# 35. Próximo bloque recomendado
+
+El próximo bloque funcional que había quedado planteado es permitir que el dueño de la reserva pueda gestionarla sin usar permisos administrativos.
+
+## Cliente autenticado
+
+Propuesta:
+
+```text
+GET   /api/me/reservations
+GET   /api/me/reservations/{id}
+PATCH /api/me/reservations/{id}/cancel
+```
+
+Regla:
+
+```text
+customer_user_id debe ser auth()->id()
+```
+
+No usar permisos RBAC administrativos para estas rutas.
+
+Si la reserva no pertenece al usuario, preferir respuesta tipo `404` para no filtrar existencia.
+
+## Guest mediante `public_token`
+
+Propuesta:
+
+```text
+GET   /api/public/reservations/{token}
+PATCH /api/public/reservations/{token}/cancel
+```
+
+El `public_token` funciona como capacidad/bearer secret.
+
+No exponer operaciones públicas basadas solamente en ID secuencial.
+
+El repository ya tiene:
+
+```php
+findByPublicToken(string $token): ?Reservation
+```
+
+Faltaría agregar, para cliente autenticado, algo como:
+
+```php
+findByCustomerUser(int $userId): array
+```
+
+si se implementa la colección propia.
+
+---
+
+# 36. Payments — módulo futuro
+
+`Domain/Payments/Entities/Payment.php` existe como placeholder, pero Payments todavía no está implementado funcionalmente.
+
+Objetivo futuro:
+
+```text
+Reservation
+↓
+Payment
+↓
+Payment Provider
+↓
+Webhook
+↓
+Confirm Reservation
+```
+
+Temas a estudiar allí:
+
+- idempotency keys;
+- webhooks duplicados;
+- eventos fuera de orden;
+- retries;
+- state machine;
+- transactions;
+- consistencia;
+- confirmación de Reservation solamente después del pago cuando corresponda.
+
+---
+
+# 37. Índices / SQL / performance pendientes
+
+Ya existe índice de disponibilidad sobre:
+
+```text
+reservations(court_id, starts_at, ends_at)
+```
+
+Más adelante evaluar con datos reales:
+
+```text
+EXPLAIN
+EXPLAIN ANALYZE
+```
+
+antes de agregar índices adicionales.
+
+Candidatos a analizar:
+
+```text
+court_id + status + starts_at + ends_at
+expires_at
+branch_id + tipo_court_id en pricing/courts
+```
+
+No agregar índices solamente porque “parecen útiles”; medir consultas reales.
+
+---
+
+# 38. Decisiones de diseño que NO hay que olvidar
+
+1. Eloquent no entra al Domain.
+2. Controllers coordinan HTTP, no contienen reglas centrales.
+3. Las reglas importantes viven en Entity / Handler / Validator / Service según corresponda.
+4. Los Handlers dependen de Repository interfaces.
+5. `.collection` no representa un permiso guardado en DB.
+6. Autorización y filtrado de colección son problemas distintos.
+7. `rol_id` es el nombre real de la FK de roles en memberships/pivots relevantes.
+8. Una membership global cubre todas las Branches del Club.
+9. Membership global y específicas no pueden coexistir para el mismo User/Club.
+10. Branch memberships diferentes sí pueden coexistir.
+11. `club.view` tiene comportamiento especial a nivel Club.
+12. Pricing es histórico: una Reservation guarda `total_price` + segmentos.
+13. `PriceResolver` trabaja minuto a minuto y prorratea sobre tarifa horaria.
+14. Toda creación de Reservation funcional debe pasar por `CreateReservationHandler`.
+15. `CreateReservationHandler` toma `lockForUpdate()` antes de validar disponibilidad.
+16. `PENDING` expira en 15 minutos actualmente.
+17. Un `PENDING` vencido deja de bloquear aunque el Job todavía no lo haya marcado `EXPIRED`.
+18. Guest y customer autenticado no pueden forzar `confirmed`.
+19. El personal sí puede crear `PENDING` o `CONFIRMED` mediante el request administrativo.
+20. La duración mínima de una Reservation es 60 minutos.
+21. `duration_minutes` de Availability tiene default 60.
+22. `duration_minutes` debe ser múltiplo de `interval_minutes` en el código actual.
+23. `interval_minutes` define los posibles inicios; `duration_minutes` define el final del turno.
+24. En generación de slots: avanzar cursor por `interval_minutes`, no por duración.
+25. No se soportan reservas cruzando medianoche por ahora.
+26. `public_token` existe para evitar administrar reservas públicas por IDs secuenciales.
+
+---
+
+# 39. Estado actual resumido
+
+Implementado:
+
+```text
+✅ Auth con Sanctum
+✅ Clubs
+✅ Branches
+✅ Memberships
+✅ Roles
+✅ Permissions
+✅ AuthorizationService
+✅ CheckPermission por scope
+✅ Courts
+✅ TipoCourt
+✅ IntervalTimeTipoCourt
+✅ Pricing base
+✅ Promotions / CourtPriceRules
+✅ PriceResolver
+✅ Unit Tests de Pricing
+✅ Reservations
+✅ Guest booking
+✅ Authenticated customer booking
+✅ Staff booking
+✅ Reservation pricing snapshot
+✅ Availability por Court
+✅ Availability por Branch + TipoCourt
+✅ duration_minutes configurable en Availability
+✅ duración mínima 60
+✅ Cancel Reservation administrativa
+✅ Confirm Reservation administrativa
+✅ PENDING expiration
+✅ ExpirePendingReservationsJob
+✅ Scheduler cada minuto
+✅ protección de doble reserva con transaction + lockForUpdate
+✅ Feature Tests de Reservations/Pricing/Auth/Authorization
+```
+
+Pendiente / próximo:
+
+```text
+⬜ tests específicos de duration_minutes en Availability
+⬜ cliente autenticado: listar/ver/cancelar reservas propias
+⬜ guest: ver/cancelar mediante public_token
+⬜ Payments
+⬜ webhooks e idempotencia
+⬜ eventos/notifications/queues posteriores a confirmación
+⬜ análisis MySQL con EXPLAIN
+⬜ performance e índices adicionales basados en medición
+```
+
+---
+
+# 40. Cómo retomar el proyecto en una próxima conversación
+
+NO empezar de cero.
+
+Primero leer este archivo y después inspeccionar el código real si hubo cambios posteriores.
+
+Modelo mental principal:
+
+```text
+HTTP Request
+↓
+Controller / FormRequest
+↓
+Command o Query
+↓
+Handler
+↓
+Domain + Repository interfaces
+↓
+Infrastructure / Eloquent
+↓
+DTO
+↓
+ApiResponse
+```
+
+Para autorización administrativa:
+
+```text
+Resource
+↓
+Court/Branch/Club correspondiente
+↓
+Membership activa que cubre el scope
+↓
+Role
+↓
+Permission = route name
+```
+
+Para crear Reservation:
+
+```text
+Request
+↓
+CreateReservationHandler
+↓
+Transaction
+↓
+lock Court
+↓
+ReservationValidator
+↓
+PriceResolver
+↓
+Reservation + historical price segments
+↓
+Commit
+```
+
+Para Availability:
+
+```text
+date
 +
-court.create
+duration_minutes (default 60)
+↓
+interval_minutes determina inicios
+↓
+duration_minutes determina fin de cada slot
+↓
+se valida el rango completo contra blocking reservations
 ```
 
-También habrá que extender `CheckPermission` para resolver el scope de
-un `court`.
-
----
-
-# 23. Después de Courts: Reservations
-
-Una vez cerrado Courts y sus tests, el siguiente módulo importante será
-Reservations.
-
-Orden previsto:
+Próxima dirección recomendada:
 
 ```text
-Courts
+Customer/Guest ownership de reservas
 ↓
-Tests de Courts
+Payments
 ↓
-Reservations básico
+webhooks/idempotencia
 ↓
-Disponibilidad
+notifications/events/queues
 ↓
-Evitar doble reserva
-↓
-Transactions
-↓
-Concurrencia
-↓
-SELECT ... FOR UPDATE / locking
-↓
-Race conditions
-↓
-Deadlocks y retries
-↓
-Índices
-↓
-EXPLAIN y optimización SQL
+performance/EXPLAIN
 ```
-
-Este módulo será utilizado para profundizar especialmente en backend y
-MySQL.
-
----
-
-# 24. Temas pendientes
-
-Prioridad aproximada:
-
-1.  Crear módulo Courts. (terminado)
-2.  Crear migration/model/entity/repository de Court. (terminado)
-3.  Crear Application use cases de Court. (terminado)
-4.  Agregar permisos `court.*`. (terminado)
-5.  Extender autorización para resolver scope de Court. (terminado)
-6.  Crear `CourtFactory`. (terminado)
-7.  Crear Feature Tests de Courts. (terminado)
-8.  Diseño de como implementar Precios y promociones por dia y hora. (terminado)
-9.  Comenzar Reservations. (pendiente)
-10. Diseñar reglas para evitar reservas superpuestas. (pendiente)
-11. Introducir transacciones y concurrencia. (pendiente)
-12. Analizar índices MySQL y consultas con `EXPLAIN`. (pendiente)
-13. Más adelante evaluar Unit Tests puros del Domain además de Feature
-    Tests. (pendiente)
-
----
-
-# 25. Criterio que venimos usando al desarrollar
-
-No agregar abstracciones solamente por agregarlas.
-
-Antes de implementar una solución:
-
-1.  Identificar la regla de negocio.
-2.  Determinar a qué capa pertenece.
-3.  Evitar meter reglas del dominio en Controllers.
-4.  Mantener Eloquent fuera del Domain.
-5.  Reutilizar AuthorizationService en lugar de duplicar autorización.
-6.  Diferenciar autorización de una acción y filtrado de una colección.
-7.  Escribir tests para reglas importantes.
-8.  Ejecutar la suite completa antes de seguir.
-
-Cuando aparezca un problema nuevo de autorización, primero pensar:
-
-```text
-¿Qué recurso estoy intentando usar?
-↓
-¿A qué Club pertenece?
-↓
-¿A qué Branch pertenece, si corresponde?
-↓
-¿Qué memberships activas tiene el usuario?
-↓
-¿Alguna membership cubre ese scope?
-↓
-¿Qué Role tiene en esa membership?
-↓
-¿Ese Role posee el permiso de la ruta?
-```
-
-Ese es el modelo mental principal del sistema.
-
----
-
-# 26. Contexto para una próxima conversación
-
-Al retomar este proyecto, NO empezar de cero.
-
-La base ya implementada incluye:
-
-```text
-Auth con Sanctum
-Clubs
-Branches
-Memberships
-Roles
-Permissions
-AuthorizationService
-CheckPermission
-Factories
-Feature Tests
-```
-
-El sistema soporta memberships globales y memberships por Branch,
-incluso múltiples memberships por Club.
-
-El próximo objetivo principal es **Courts**, y luego **Reservations**
-con foco en conceptos avanzados de backend, base de datos y
-concurrencia.
-
-Antes de continuar, revisar este documento junto con el estado actual
-del repositorio porque el código puede haber avanzado desde la última
-actualización.
