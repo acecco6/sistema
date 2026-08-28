@@ -16,6 +16,7 @@
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
+        "andreaselia/laravel-api-to-postman": "^2.3",
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
@@ -23,7 +24,8 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "pestphp/pest": "^5.1",
-        "pestphp/pest-plugin-laravel": "^5.0"
+        "pestphp/pest-plugin-laravel": "^5.0",
+        "yasin_tgh/laravel-postman": "^1.4"
     },
     "autoload": {
         "psr-4": {

@@ -11,6 +11,7 @@ final readonly class CourtAvailabilityDto
         public int $courtId,
         public string $date,
         public int $intervalMinutes,
+        public int $durationMinutes,
         public array $slots,
     ) {}
 
@@ -20,6 +21,7 @@ final readonly class CourtAvailabilityDto
             'court_id' => $this->courtId,
             'date' => $this->date,
             'interval_minutes' => $this->intervalMinutes,
+            'duration_minutes' => $this->durationMinutes,
             'slots' => array_map(
                 fn(AvailabilitySlotDto $slot) =>
                 $slot->toArray(),

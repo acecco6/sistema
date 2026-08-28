@@ -110,12 +110,17 @@ final class ReservationValidator
             ) / 60
         );
 
-        /*
-        * La duración debe ser al menos un intervalo
-        * y múltiplo exacto del intervalo.
-        */
-        if ($durationMinutes < $intervalMinutes || $durationMinutes % $intervalMinutes !== 0) {
-            throw new InvalidReservationDurationException();
+
+        if ($durationMinutes < 60) {
+            throw new InvalidReservationDurationException(
+                'La duración mínima de una reserva es de 60 minutos.'
+            );
+        }
+
+        if ($durationMinutes % $intervalMinutes !== 0) {
+            throw new InvalidReservationDurationException(
+                "La duración debe ser múltiplo de {$intervalMinutes} minutos."
+            );
         }
     }
 

@@ -12,6 +12,7 @@ final readonly class TipoCourtAvailabilityDto
         public int $tipoCourtId,
         public string $date,
         public int $intervalMinutes,
+        public int $durationMinutes,
         public array $courts,
     ) {}
 
@@ -22,6 +23,7 @@ final readonly class TipoCourtAvailabilityDto
             'tipo_court_id' => $this->tipoCourtId,
             'date' => $this->date,
             'interval_minutes' => $this->intervalMinutes,
+            'duration_minutes' => $this->durationMinutes,
 
             'courts' => array_map(
                 fn(CourtAvailabilitySummaryDto $court) =>

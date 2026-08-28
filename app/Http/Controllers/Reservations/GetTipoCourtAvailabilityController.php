@@ -11,11 +11,8 @@ use Illuminate\Http\Request;
 
 final class GetTipoCourtAvailabilityController extends Controller
 {
-    public function __invoke(
-        int $branch_id,
-        Request $request,
-        GetTipoCourtAvailabilityHandler $handler,
-    ): JsonResponse {
+    public function __invoke(int $branch_id, Request $request, GetTipoCourtAvailabilityHandler $handler,): JsonResponse
+    {
         $validated = $request->validate([
             'tipo_court_id' => [
                 'required',
@@ -40,8 +37,13 @@ final class GetTipoCourtAvailabilityController extends Controller
                 'required_with:start_time',
                 'after:start_time',
             ],
-        ]);
 
+            'duration_minutes' => [
+                'nullable',
+                'integer',
+                'min:60',
+            ],
+        ]);
         $result = $handler->handle(
             new GetTipoCourtAvailabilityQuery(
                 branchId: $branch_id,
@@ -49,6 +51,7 @@ final class GetTipoCourtAvailabilityController extends Controller
                 date: new DateTimeImmutable(
                     $validated['date']
                 ),
+                durationMinutes: (int) ($validated['duration_minutes'] ?? 60),
                 startTime: $validated['start_time'] ?? null,
                 endTime: $validated['end_time'] ?? null,
             )

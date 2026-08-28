@@ -28,6 +28,11 @@ final class GetCourtAvailabilityHandler
     public function handle(GetCourtAvailabilityQuery $query): CourtAvailabilityDto
     {
         $court = $this->courts->findById($query->courtId);
+        $durationMinutes = $query->durationMinutes;
+
+        if ($durationMinutes < 60) {
+            throw new InvalidReservationDurationException('La duración mínima de una reserva es de 60 minutos.');
+        }
 
         if ($court === null) {
             throw new CourtNotFoundException();
@@ -53,6 +58,12 @@ final class GetCourtAvailabilityHandler
             throw new InvalidReservationDurationException();
         }
 
+        if ($durationMinutes % $intervalMinutes !== 0) {
+            throw new InvalidReservationDurationException(
+                "La duración debe ser múltiplo de {$intervalMinutes} minutos."
+            );
+        }
+
         /*
          * Inicio y fin operativo del día consultado.
          */
@@ -72,45 +83,66 @@ final class GetCourtAvailabilityHandler
         $current = $opening;
 
         while ($current < $closing) {
-            $next = $current->add(new DateInterval("PT{$intervalMinutes}M"));
 
             /*
-             * Si el último slot se pasa del horario
-             * de cierre, no lo mostramos.
-             */
-            if ($next > $closing) {
+     * El final del slot depende de cuánto
+     * quiere jugar el usuario.
+     */
+            $slotEnd = $current->add(
+                new DateInterval(
+                    "PT{$durationMinutes}M"
+                )
+            );
+
+            /*
+     * Si la reserva terminaría después
+     * del cierre, no mostramos ese horario.
+     */
+            if ($slotEnd > $closing) {
                 break;
             }
 
             $available = true;
 
             foreach ($blockingReservations as $reservation) {
-                /*
-                 * Misma regla de overlap:
-                 *
-                 * existing.start < slot.end
-                 * &&
-                 * existing.end > slot.start
-                 */
-                if ($reservation->getStartsAt() < $next && $reservation->getEndsAt() > $current) {
+                if (
+                    $reservation->getStartsAt() < $slotEnd
+                    &&
+                    $reservation->getEndsAt() > $current
+                ) {
                     $available = false;
                     break;
                 }
             }
 
             $slots[] = new AvailabilitySlotDto(
-                startsAt: $current->format('Y-m-d H:i:s'),
-                endsAt: $next->format('Y-m-d H:i:s'),
+                startsAt: $current->format(
+                    'Y-m-d H:i:s'
+                ),
+                endsAt: $slotEnd->format(
+                    'Y-m-d H:i:s'
+                ),
                 available: $available,
             );
 
-            $current = $next;
+            /*
+            * IMPORTANTE:
+            *
+            * Los posibles horarios de inicio
+            * siguen avanzando según intervalMinutes.
+            */
+            $current = $current->add(
+                new DateInterval(
+                    "PT{$intervalMinutes}M"
+                )
+            );
         }
 
         return new CourtAvailabilityDto(
             courtId: $court->getId(),
             date: $day,
             intervalMinutes: $intervalMinutes,
+            durationMinutes: $durationMinutes,
             slots: $slots,
         );
     }

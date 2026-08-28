@@ -25,9 +25,8 @@ final class GetTipoCourtAvailabilityHandler
         private ReservationRepository $reservations,
     ) {}
 
-    public function handle(
-        GetTipoCourtAvailabilityQuery $query
-    ): TipoCourtAvailabilityDto {
+    public function handle(GetTipoCourtAvailabilityQuery $query): TipoCourtAvailabilityDto
+    {
         $branch = $this->branches->findById(
             $query->branchId
         );
@@ -40,14 +39,23 @@ final class GetTipoCourtAvailabilityHandler
             throw new BranchInactiveException();
         }
 
-        $intervalMinutes = $this->intervals
-            ->findIntervalMinutes(
-                branchId: $query->branchId,
-                tipoCourtId: $query->tipoCourtId,
-            );
+        $intervalMinutes = $this->intervals->findIntervalMinutes(
+            branchId: $query->branchId,
+            tipoCourtId: $query->tipoCourtId,
+        );
 
         if ($intervalMinutes === null) {
             throw new InvalidReservationDurationException();
+        }
+
+        $durationMinutes = $query->durationMinutes;
+
+        if ($durationMinutes < 60) {
+            throw new InvalidReservationDurationException('La duración mínima de una reserva es de 60 minutos.');
+        }
+
+        if ($durationMinutes % $intervalMinutes !== 0) {
+            throw new InvalidReservationDurationException("La duración debe ser múltiplo de {$intervalMinutes} minutos.");
         }
 
         $courts = $this->courts
@@ -115,13 +123,14 @@ final class GetTipoCourtAvailabilityHandler
             $current = $opening;
 
             while ($current < $closing) {
-                $next = $current->add(
+
+                $slotEnd = $current->add(
                     new DateInterval(
-                        "PT{$intervalMinutes}M"
+                        "PT{$durationMinutes}M"
                     )
                 );
 
-                if ($next > $closing) {
+                if ($slotEnd > $closing) {
                     break;
                 }
 
@@ -129,7 +138,7 @@ final class GetTipoCourtAvailabilityHandler
 
                 foreach ($blockingReservations as $reservation) {
                     if (
-                        $reservation->getStartsAt() < $next
+                        $reservation->getStartsAt() < $slotEnd
                         &&
                         $reservation->getEndsAt() > $current
                     ) {
@@ -143,13 +152,17 @@ final class GetTipoCourtAvailabilityHandler
                     startsAt: $current->format(
                         'Y-m-d H:i:s'
                     ),
-                    endsAt: $next->format(
+                    endsAt: $slotEnd->format(
                         'Y-m-d H:i:s'
                     ),
                     available: $available,
                 );
 
-                $current = $next;
+                $current = $current->add(
+                    new DateInterval(
+                        "PT{$intervalMinutes}M"
+                    )
+                );
             }
 
             $courtResults[] =
@@ -165,6 +178,7 @@ final class GetTipoCourtAvailabilityHandler
             tipoCourtId: $query->tipoCourtId,
             date: $day,
             intervalMinutes: $intervalMinutes,
+            durationMinutes: $durationMinutes,
             courts: $courtResults,
         );
     }

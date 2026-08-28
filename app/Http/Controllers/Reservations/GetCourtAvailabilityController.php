@@ -18,9 +18,18 @@ final class GetCourtAvailabilityController extends Controller
                 'required',
                 'date_format:Y-m-d',
             ],
+            'duration_minutes' => [
+                'sometimes',
+                'integer',
+                'min:60',
+            ],
         ]);
 
-        $query = new GetCourtAvailabilityQuery(courtId: $court_id, date: new DateTimeImmutable($validated['date']));
+        $query = new GetCourtAvailabilityQuery(
+            courtId: $court_id,
+            date: new DateTimeImmutable($validated['date']),
+            durationMinutes: (int) ($validated['duration_minutes'] ?? 60),
+        );
         $result = $handler->handle($query);
 
         return $this->successResponse(data: $result->toArray());
