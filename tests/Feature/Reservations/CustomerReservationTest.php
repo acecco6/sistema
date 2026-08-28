@@ -187,4 +187,107 @@ final class CustomerReservationTest extends TestCase
 
         $response->assertUnauthorized();
     }
+
+    public function test_cliente_puede_listar_solamente_sus_reservas(): void
+    {
+        /** @var User $customer */
+        $customer = User::factory()->createOne();
+
+        /** @var User $otherCustomer */
+        $otherCustomer = User::factory()->createOne();
+
+        /** @var Reservation $ownReservation1 */
+        $ownReservation1 = Reservation::factory()
+            ->forCustomer($customer)
+            ->createOne();
+
+        /** @var Reservation $ownReservation2 */
+        $ownReservation2 = Reservation::factory()
+            ->forCustomer($customer)
+            ->createOne();
+
+        /** @var Reservation $otherReservation */
+        $otherReservation = Reservation::factory()
+            ->forCustomer($otherCustomer)
+            ->createOne();
+
+        $response = $this
+            ->actingAs($customer, 'sanctum')
+            ->getJson('/api/me/reservations');
+
+        $response->assertOk();
+
+        $response->assertJsonFragment([
+            'id' => $ownReservation1->id,
+        ]);
+
+        $response->assertJsonFragment([
+            'id' => $ownReservation2->id,
+        ]);
+
+        $response->assertJsonMissing([
+            'id' => $otherReservation->id,
+        ]);
+    }
+
+    public function test_cliente_puede_ver_una_reserva_propia(): void
+    {
+        /** @var User $customer */
+        $customer = User::factory()->createOne();
+
+        /** @var Reservation $reservation */
+        $reservation = Reservation::factory()
+            ->forCustomer($customer)
+            ->createOne();
+
+        $response = $this
+            ->actingAs($customer, 'sanctum')
+            ->getJson(
+                "/api/me/reservations/{$reservation->id}"
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.id',
+                $reservation->id
+            )
+            ->assertJsonPath(
+                'data.customer_user_id',
+                $customer->id
+            );
+    }
+
+
+    public function test_cliente_no_puede_ver_reserva_de_otro_cliente(): void
+    {
+        /** @var User $owner */
+        $owner = User::factory()->createOne();
+
+        /** @var User $otherCustomer */
+        $otherCustomer = User::factory()->createOne();
+
+        /** @var Reservation $reservation */
+        $reservation = Reservation::factory()
+            ->forCustomer($owner)
+            ->createOne();
+
+        $response = $this
+            ->actingAs($otherCustomer, 'sanctum')
+            ->getJson(
+                "/api/me/reservations/{$reservation->id}"
+            );
+
+        $response->assertNotFound();
+    }
+
+
+    public function test_usuario_no_autenticado_no_puede_ver_sus_reservas(): void
+    {
+        $response = $this->getJson(
+            '/api/me/reservations'
+        );
+
+        $response->assertUnauthorized();
+    }
 }

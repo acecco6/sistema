@@ -10,8 +10,6 @@ interface ReservationRepository
 {
     public function findById(int $id): ?Reservation;
 
-    public function findByPublicToken(string $token): ?Reservation;
-
     /**
      * @return Reservation[]
      */
@@ -43,4 +41,11 @@ interface ReservationRepository
      * @return Reservation[]
      */
     public function findExpiredPending(): array;
+
+    /**
+     * @return Reservation[]
+     */
+    public function findByCustomerUser(int $customerUserId): array;
+
+    public function findByPublicToken(string $token): ?Reservation;
 }

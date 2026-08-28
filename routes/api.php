@@ -1,62 +1,15 @@
 <?php
 
 
-use App\Http\Controllers\Auth\{
-    LoginController,
-    LogoutController,
-    RegisterController
-};
-use App\Http\Controllers\Branches\{
-    CreateBranchController,
-    DesactivateBranchController,
-    GetBranchController,
-    ShowBranchController,
-    UpdateBranchController
-};
-use App\Http\Controllers\Clubs\{
-    CreateClubController,
-    DesactivateClubController,
-    GetClubController,
-    ShowClubController,
-    UpdateClubController
-};
-use App\Http\Controllers\Courts\{
-    CreateCourtController,
-    DeactivateCourtController,
-    GetCourtController,
-    ShowCourtController,
-    UpdateCourtController
-};
-use App\Http\Controllers\Memberships\{
-    ChangeMembershipBranchController,
-    ChangeMembershipRoleController,
-    ChangeMembershipStatusController,
-    CreateMembershipController
-};
-use App\Http\Controllers\Pricing\{
-    ChangeCourtPriceStatusController,
-    ChangeCourtPromotionStatusController,
-    CreateCourtPriceController,
-    CreateCourtPromotionController,
-    GetCourtPriceController,
-    GetCourtPromotionController,
-    ShowCourtPriceController,
-    ShowCourtPromotionController,
-    UpdateCourtPriceController,
-    UpdateCourtPromotionController
-};
-use App\Http\Controllers\Reservations\{
-    BookCourtAuthenticatedController,
-    BookCourtGuestController,
-    CancelCustomerReservationController,
-    CancelReservationController,
-    ConfirmReservationController,
-    CreateReservationController,
-    GetCourtAvailabilityController,
-    GetCourtReservationsController,
-    GetTipoCourtAvailabilityController,
-    ShowReservationController
-};
+use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController};
+use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
+use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
+use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
+use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
+use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
+use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
+use App\Http\Controllers\Reservations\GetCustomerReservationsController;
+use App\Http\Controllers\Reservations\ShowCustomerReservationController;
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -198,6 +151,8 @@ Route::middleware('auth:sanctum')->group(function () {
     |
     */
     Route::prefix('me/reservations')->group(function () {
+        Route::get('', GetCustomerReservationsController::class)->name('reservation.customer.collection');
+        Route::get('/{id}', ShowCustomerReservationController::class)->name('reservation.customer.view');
         Route::patch('/{id}/cancel', CancelCustomerReservationController::class)->name('reservation.customer.cancel');
     });
 

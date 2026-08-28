@@ -223,6 +223,20 @@ final class EloquentReservationRepository implements ReservationRepository
             ->all();
     }
 
+    public function findByCustomerUser(int $customerUserId): array
+    {
+        return EloquentReservation::query()
+            ->where('customer_user_id', $customerUserId)
+            ->orderByDesc('starts_at')
+            ->get()
+            ->map(
+                fn(EloquentReservation $reservation) =>
+                $this->toDomain($reservation)
+            )
+            ->all();
+    }
+
+
     private function toDomainSegment(EloquentReservationPriceSegment $segment): DomainReservationPriceSegment
     {
         return new DomainReservationPriceSegment(
