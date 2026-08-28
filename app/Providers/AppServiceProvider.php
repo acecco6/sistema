@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Route;
 use App\Application\Auth\Contracts\{
     PasswordHasher,
     TokenGenerator
@@ -66,6 +67,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Route::pattern('id', '[0-9]+');
+        Route::pattern('court_id', '[0-9]+');
+        Route::pattern('branch_id', '[0-9]+');
+        Route::pattern('club_id', '[0-9]+');
+        Route::pattern('membership_id', '[0-9]+');
+        Route::pattern('court_price_id', '[0-9]+');
+        Route::pattern('promotion_id', '[0-9]+');
     }
 }

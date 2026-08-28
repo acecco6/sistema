@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\AuditLog;
 use App\Shared\Exceptions\DomainException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -60,6 +61,23 @@ return Application::configure(basePath: dirname(__DIR__))
                 422,
                 $e->errors()
             );
+        });
+
+
+        $exceptions->render(function (
+            NotFoundHttpException $e,
+            Request $request
+        ) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Recurso no encontrado.',
+                    'data' => null,
+                    'code' => 404,
+                ], 404);
+            }
+
+            return null;
         });
         $exceptions->render(function (DomainException $e, Request $request) use ($responder) {
             return $responder->triggerError(

@@ -8,6 +8,7 @@ final readonly class AvailabilitySlotDto
         public string $startsAt,
         public string $endsAt,
         public bool $available,
+        public ?string $totalPrice,
     ) {}
 
     public function toArray(): array
@@ -16,6 +17,7 @@ final readonly class AvailabilitySlotDto
             'starts_at' => $this->startsAt,
             'ends_at' => $this->endsAt,
             'available' => $this->available,
+            'total_price' => $this->totalPrice,
         ];
     }
 }

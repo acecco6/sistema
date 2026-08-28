@@ -2,6 +2,7 @@
 
 namespace App\Application\Reservations\Availability;
 
+use App\Application\Pricing\Resolver\PriceResolver;
 use App\Application\Reservations\Availability\GetTipoCourtAvailabilityQuery;
 use App\Application\Reservations\DTOs\AvailabilitySlotDto;
 use App\Application\Reservations\DTOs\CourtAvailabilitySummaryDto;
@@ -23,6 +24,7 @@ final class GetTipoCourtAvailabilityHandler
         private CourtRepository $courts,
         private IntervalTimeTipoCourtRepository $intervals,
         private ReservationRepository $reservations,
+        private PriceResolver $priceResolver,
     ) {}
 
     public function handle(GetTipoCourtAvailabilityQuery $query): TipoCourtAvailabilityDto
@@ -58,11 +60,10 @@ final class GetTipoCourtAvailabilityHandler
             throw new InvalidReservationDurationException("La duración debe ser múltiplo de {$intervalMinutes} minutos.");
         }
 
-        $courts = $this->courts
-            ->findActiveByBranchAndTipo(
-                branchId: $query->branchId,
-                tipoCourtId: $query->tipoCourtId,
-            );
+        $courts = $this->courts->findActiveByBranchAndTipo(
+            branchId: $query->branchId,
+            tipoCourtId: $query->tipoCourtId,
+        );
 
         $day = $query->date->format('Y-m-d');
 
@@ -80,10 +81,7 @@ final class GetTipoCourtAvailabilityHandler
          * Ejemplo:
          * ?start_time=18:00:00&end_time=20:00:00
          */
-        if (
-            $query->startTime !== null
-            && $query->endTime !== null
-        ) {
+        if ($query->startTime !== null && $query->endTime !== null) {
             $requestedStart = new DateTimeImmutable(
                 $day . ' ' . $query->startTime
             );
@@ -111,8 +109,7 @@ final class GetTipoCourtAvailabilityHandler
 
         foreach ($courts as $court) {
             $blockingReservations =
-                $this->reservations
-                ->findBlockingReservationsBetween(
+                $this->reservations->findBlockingReservationsBetween(
                     courtId: $court->getId(),
                     startsAt: $opening,
                     endsAt: $closing,
@@ -148,29 +145,30 @@ final class GetTipoCourtAvailabilityHandler
                     }
                 }
 
-                $slots[] = new AvailabilitySlotDto(
-                    startsAt: $current->format(
-                        'Y-m-d H:i:s'
-                    ),
-                    endsAt: $slotEnd->format(
-                        'Y-m-d H:i:s'
-                    ),
-                    available: $available,
-                );
+                $price = null;
+                if ($available) {
+                    $price = $this->priceResolver->resolve(
+                        branchId: $branch->getId(),
+                        tipoCourtId: $court->getTipoCourtId(),
+                        startsAt: $current,
+                        endsAt: $slotEnd,
+                    )->total;
+                    $slots[] = new AvailabilitySlotDto(
+                        startsAt: $current->format('Y-m-d H:i:s'),
+                        endsAt: $slotEnd->format('Y-m-d H:i:s'),
+                        available: $available,
+                        totalPrice: $price,
+                    );
+                }
 
-                $current = $current->add(
-                    new DateInterval(
-                        "PT{$intervalMinutes}M"
-                    )
-                );
+                $current = $current->add(new DateInterval("PT{$intervalMinutes}M"));
             }
 
-            $courtResults[] =
-                new CourtAvailabilitySummaryDto(
-                    courtId: $court->getId(),
-                    courtName: $court->getName(),
-                    slots: $slots,
-                );
+            $courtResults[] = new CourtAvailabilitySummaryDto(
+                courtId: $court->getId(),
+                courtName: $court->getName(),
+                slots: $slots,
+            );
         }
 
         return new TipoCourtAvailabilityDto(

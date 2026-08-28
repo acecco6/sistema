@@ -2,6 +2,7 @@
 
 namespace App\Application\Reservations\Availability;
 
+use App\Application\Pricing\Resolver\PriceResolver;
 use App\Application\Reservations\DTOs\AvailabilitySlotDto;
 use App\Application\Reservations\DTOs\CourtAvailabilityDto;
 use App\Domain\Branches\Exceptions\BranchInactiveException;
@@ -23,13 +24,13 @@ final class GetCourtAvailabilityHandler
         private BranchRepository $branches,
         private IntervalTimeTipoCourtRepository $intervals,
         private ReservationRepository $reservations,
+        private PriceResolver $priceResolver,
     ) {}
 
     public function handle(GetCourtAvailabilityQuery $query): CourtAvailabilityDto
     {
         $court = $this->courts->findById($query->courtId);
         $durationMinutes = $query->durationMinutes;
-
         if ($durationMinutes < 60) {
             throw new InvalidReservationDurationException('La duración mínima de una reserva es de 60 minutos.');
         }
@@ -85,9 +86,9 @@ final class GetCourtAvailabilityHandler
         while ($current < $closing) {
 
             /*
-     * El final del slot depende de cuánto
-     * quiere jugar el usuario.
-     */
+            * El final del slot depende de cuánto
+            * quiere jugar el usuario.
+            */
             $slotEnd = $current->add(
                 new DateInterval(
                     "PT{$durationMinutes}M"
@@ -95,9 +96,9 @@ final class GetCourtAvailabilityHandler
             );
 
             /*
-     * Si la reserva terminaría después
-     * del cierre, no mostramos ese horario.
-     */
+            * Si la reserva terminaría después
+            * del cierre, no mostramos ese horario.
+            */
             if ($slotEnd > $closing) {
                 break;
             }
@@ -115,15 +116,25 @@ final class GetCourtAvailabilityHandler
                 }
             }
 
-            $slots[] = new AvailabilitySlotDto(
-                startsAt: $current->format(
-                    'Y-m-d H:i:s'
-                ),
-                endsAt: $slotEnd->format(
-                    'Y-m-d H:i:s'
-                ),
-                available: $available,
-            );
+            if ($available) {
+                $price = $this->priceResolver->resolve(
+                    branchId: $branch->getId(),
+                    tipoCourtId: $court->getTipoCourtId(),
+                    startsAt: $current,
+                    endsAt: $slotEnd,
+                )->total;
+
+                $slots[] = new AvailabilitySlotDto(
+                    startsAt: $current->format(
+                        'Y-m-d H:i:s'
+                    ),
+                    endsAt: $slotEnd->format(
+                        'Y-m-d H:i:s'
+                    ),
+                    available: $available,
+                    totalPrice: $price,
+                );
+            }
 
             /*
             * IMPORTANTE:
@@ -131,11 +142,7 @@ final class GetCourtAvailabilityHandler
             * Los posibles horarios de inicio
             * siguen avanzando según intervalMinutes.
             */
-            $current = $current->add(
-                new DateInterval(
-                    "PT{$intervalMinutes}M"
-                )
-            );
+            $current = $current->add(new DateInterval("PT{$intervalMinutes}M"));
         }
 
         return new CourtAvailabilityDto(
