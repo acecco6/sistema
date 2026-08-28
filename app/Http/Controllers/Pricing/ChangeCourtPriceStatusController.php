@@ -5,22 +5,17 @@ namespace App\Http\Controllers\Pricing;
 use App\Application\Pricing\ChangeStatus\ChangeCourtPriceStatusCommand;
 use App\Application\Pricing\ChangeStatus\ChangeCourtPriceStatusHandler;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Pricing\ChangeCourtPriceStatusRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 final class ChangeCourtPriceStatusController extends Controller
 {
     public function __invoke(
         int $id,
-        Request $request,
+        ChangeCourtPriceStatusRequest $request,
         ChangeCourtPriceStatusHandler $handler,
     ): JsonResponse {
-        $validated = $request->validate([
-            'active' => [
-                'required',
-                'boolean',
-            ],
-        ]);
+        $validated = $request->validated();
 
         $result = $handler->handle(
             new ChangeCourtPriceStatusCommand(

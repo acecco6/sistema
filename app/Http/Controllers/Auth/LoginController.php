@@ -4,20 +4,17 @@ namespace App\Http\Controllers\Auth;
 
 use App\Application\Auth\Login\LoginCommand;
 use App\Application\Auth\Login\LoginHandler;
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
 
 final class LoginController extends Controller
 {
 
-    public function __invoke(Request $request, LoginHandler $handler): JsonResponse
+    public function __invoke(LoginRequest $request, LoginHandler $handler): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|string',
-        ]);
+        $validated = $request->validated();
 
         try {
             $command = new LoginCommand($validated['email'], $validated['password']);
