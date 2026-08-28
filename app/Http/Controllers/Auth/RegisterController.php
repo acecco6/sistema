@@ -5,22 +5,17 @@ namespace App\Http\Controllers\Auth;
 
 use App\Application\Auth\Register\RegisterCommand;
 use App\Application\Auth\Register\RegisterHandler;
+use App\Http\Requests\Auth\RegisterRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
 
 final class RegisterController extends Controller
 {
 
-    public function __invoke(Request $request, RegisterHandler $handler): JsonResponse
+    public function __invoke(RegisterRequest $request, RegisterHandler $handler): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'confirm_password' => 'required|string|min:8|same:password',
-        ]);
+        $validated = $request->validated();
 
         try {
             $command = new RegisterCommand(
