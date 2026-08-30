@@ -13,7 +13,8 @@
         "laravel-lang/common": "^6.8",
         "laravel/framework": "^13.17",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "mercadopago/dx-php": "^3.16"
     },
     "require-dev": {
         "andreaselia/laravel-api-to-postman": "^2.3",
