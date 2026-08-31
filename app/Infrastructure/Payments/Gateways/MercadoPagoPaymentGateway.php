@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\Client\Preference\PreferenceClient;
+use MercadoPago\Exceptions\MPNotFoundException;
 use MercadoPago\MercadoPagoConfig;
 use RuntimeException;
 
@@ -27,13 +28,8 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
         MercadoPagoConfig::setAccessToken($accessToken);
     }
 
-    public function createCheckout(
-        string $externalReference,
-        string $title,
-        string $amount,
-        DateTimeImmutable $expiresAt,
-        ?string $payerEmail = null,
-    ): CheckoutResult {
+    public function createCheckout(string $externalReference, string $title, string $amount, DateTimeImmutable $expiresAt, ?string $payerEmail = null,): CheckoutResult
+    {
         $client = new PreferenceClient();
 
         $request = [
@@ -67,10 +63,6 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
                     'services.mercadopago.failure_url'
                 ),
             ],
-
-            'notification_url' => config(
-                'services.mercadopago.webhook_url'
-            ),
         ];
 
         if ($payerEmail !== null) {
@@ -110,25 +102,48 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
     ): PaymentGatewayResult {
         $client = new PaymentClient();
 
-        $payment = $client->get(
-            (int) $providerPaymentId
-        );
-
-        if (empty($payment->id)) {
+        try {
+            $payment = $client->get(
+                (int) $providerPaymentId
+            );
+        } catch (MPNotFoundException) {
             throw new RuntimeException(
-                'Pago de Mercado Pago no encontrado.'
+                'El pago informado por Mercado Pago no existe.'
+            );
+        }
+
+        if ($payment->id === null) {
+            throw new RuntimeException(
+                'Mercado Pago no devolvió el ID del pago.'
+            );
+        }
+
+        if ($payment->transaction_amount === null) {
+            throw new RuntimeException(
+                'Mercado Pago no devolvió el monto del pago.'
+            );
+        }
+
+        if ($payment->currency_id === null) {
+            throw new RuntimeException(
+                'Mercado Pago no devolvió la moneda del pago.'
             );
         }
 
         return new PaymentGatewayResult(
             providerPaymentId: (string) $payment->id,
             status: (string) $payment->status,
-            externalReference: $payment->external_reference
+
+            externalReference: $payment->external_reference !== null
                 ? (string) $payment->external_reference
                 : null,
-            paidAt: $payment->date_approved
+
+            paidAt: $payment->date_approved !== null
                 ? (string) $payment->date_approved
                 : null,
+
+            amount: number_format((float) $payment->transaction_amount, 2, '.', ''),
+            currency: (string) $payment->currency_id,
         );
     }
 }

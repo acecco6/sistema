@@ -236,6 +236,18 @@ final class EloquentReservationRepository implements ReservationRepository
             ->all();
     }
 
+    public function findByIdForUpdate(int $id): ?DomainReservation
+    {
+        $model = EloquentReservation::query()
+            ->whereKey($id)
+            ->lockForUpdate()
+            ->first();
+
+        return $model
+            ? $this->toDomain($model)
+            : null;
+    }
+
 
     private function toDomainSegment(EloquentReservationPriceSegment $segment): DomainReservationPriceSegment
     {

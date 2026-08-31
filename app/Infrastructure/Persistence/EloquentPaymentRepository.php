@@ -104,12 +104,7 @@ final class EloquentPaymentRepository implements PaymentRepository
             ->where('status', PaymentStatus::APPROVED->value)
             ->sum('amount');
 
-        return number_format(
-            (float) $sum,
-            2,
-            '.',
-            ''
-        );
+        return bcadd((string) $sum, '0', 2);
     }
 
     public function findPendingByReservation(

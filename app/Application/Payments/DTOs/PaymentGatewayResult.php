@@ -9,5 +9,7 @@ final class PaymentGatewayResult
         public readonly string $status,
         public readonly ?string $externalReference,
         public readonly ?string $paidAt,
+        public readonly string $amount,
+        public readonly string $currency,
     ) {}
 }

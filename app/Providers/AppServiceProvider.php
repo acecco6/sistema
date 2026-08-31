@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Application\Auth\Contracts\{PasswordHasher, TokenGenerator};
 use App\Application\Payments\Gateways\PaymentGateway;
+use App\Application\Payments\Webhooks\WebhookSignatureValidator;
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Clubs\Repositories\ClubRepository;
 use App\Domain\Courts\Repositories\{CourtRepository, TipoCourtRepository};
@@ -18,11 +19,13 @@ use App\Domain\Users\Repositories\UserRepository;
 use App\Infrastructure\Auth\LaravelPasswordHasher;
 use App\Infrastructure\Auth\Sanctum\SanctumTokenGenerator;
 use App\Infrastructure\Payments\Gateways\MercadoPagoPaymentGateway;
+use App\Infrastructure\Payments\Webhooks\MercadoPagoWebhookSignatureValidator;
 use App\Infrastructure\Persistence\{EloquentBranchRepository, EloquentClubRepository, EloquentCourtPriceRepository, EloquentCourtRepository, EloquentMembershipRepository, EloquentPermissionRepository, EloquentReservationRepository, EloquentRoleRepository, EloquentTipoCourtRepository, EloquentUserRepository};
 use App\Infrastructure\Persistence\EloquentIntervalTimeTipoCourtRepository;
 use App\Infrastructure\Persistence\EloquentPaymentRepository;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -49,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IntervalTimeTipoCourtRepository::class, EloquentIntervalTimeTipoCourtRepository::class);
         $this->app->bind(PaymentRepository::class, EloquentPaymentRepository::class);
         $this->app->bind(PaymentGateway::class, MercadoPagoPaymentGateway::class);
+        $this->app->bind(WebhookSignatureValidator::class, MercadoPagoWebhookSignatureValidator::class);
     }
 
     /**

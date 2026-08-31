@@ -286,4 +286,23 @@ final class Reservation
     {
         return $this->cancelledAt;
     }
+
+    public function confirmFromPayment(DateTimeImmutable $now): bool
+    {
+        if ($this->status !== ReservationStatus::PENDING) {
+            return false;
+        }
+
+        if (
+            $this->expiresAt !== null &&
+            $this->expiresAt <= $now
+        ) {
+            return false;
+        }
+
+        $this->status = ReservationStatus::CONFIRMED;
+        $this->expiresAt = null;
+
+        return true;
+    }
 }

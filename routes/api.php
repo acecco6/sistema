@@ -6,6 +6,7 @@ use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchCont
 use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
 use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
+use App\Http\Controllers\Payments\MercadoPagoWebhookController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
 use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
@@ -20,6 +21,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class)->name('auth.login');
     Route::post('/register', RegisterController::class)->name('auth.register');
 });
+
+Route::post('/webhooks/mercadopago', MercadoPagoWebhookController::class)->name('webhook.mercadopago');
 
 // Rutas Publicas de Reservas para Invitados
 Route::prefix('public')->group(function () {
