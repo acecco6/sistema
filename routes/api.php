@@ -6,6 +6,7 @@ use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchCont
 use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
 use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
+use App\Http\Controllers\Payments\CompleteRefundController;
 use App\Http\Controllers\Payments\GetReservationPaymentsController;
 use App\Http\Controllers\Payments\MercadoPagoWebhookController;
 use App\Http\Controllers\Payments\RegisterManualPaymentController;
@@ -179,5 +180,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/{id}/confirm', ConfirmReservationController::class)->name('reservation.confirm');
         Route::post('{id}/payments', RegisterManualPaymentController::class)->name('payment.create');
         Route::get('{id}/payments', GetReservationPaymentsController::class)->name('payment.view');
+    });
+
+
+    Route::prefix('refunds')->middleware('permission')->group(function () {
+        Route::patch('/{id}/complete', CompleteRefundController::class)->name('refund.complete');
     });
 });

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Reservations;
 
+use App\Domain\Payments\Enums\RefundStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Models\Branch;
 use App\Models\Club;
@@ -9,6 +10,7 @@ use App\Models\Court;
 use App\Models\CourtPrice;
 use App\Models\Membership;
 use App\Models\Payment;
+use App\Models\PaymentRefund;
 use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\TipoCourt;
@@ -641,6 +643,252 @@ final class ReservationTest extends TestCase
                 'data.payment_summary.financial_status',
                 'pago_senia'
             );
+    }
+
+    public function test_admin_puede_cancelar_reserva_sin_generar_refund(): void
+    {
+        [$user, $club, $branch, $court] =
+            $this->createBaseScenario('reservation.cancel');
+
+        $reservation = Reservation::factory()
+            ->confirmed()
+            ->createOne([
+                'court_id' => $court->id,
+                'total_price' => '100000.00',
+            ]);
+
+        Payment::factory()
+            ->approved()
+            ->forReservation($reservation)
+            ->withAmount('50000.00')
+            ->createOne();
+
+        $response = $this
+            ->actingAs($user, 'sanctum')
+            ->patchJson(
+                "/api/reservations/{$reservation->id}/cancel",
+                [
+                    'create_refund' => false,
+                ]
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'cancelled'
+            );
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'cancelled',
+        ]);
+
+        $this->assertDatabaseMissing('payment_refunds', [
+            'reservation_id' => $reservation->id,
+        ]);
+    }
+
+    public function test_admin_puede_cancelar_reserva_y_generar_refund_pendiente(): void
+    {
+        [$user, $club, $branch, $court] =
+            $this->createBaseScenario('reservation.cancel');
+
+        $reservation = Reservation::factory()
+            ->confirmed()
+            ->createOne([
+                'court_id' => $court->id,
+                'total_price' => '100000.00',
+            ]);
+
+        Payment::factory()
+            ->approved()
+            ->forReservation($reservation)
+            ->withAmount('25000.00')
+            ->createOne();
+
+        Payment::factory()
+            ->approved()
+            ->forReservation($reservation)
+            ->withAmount('25000.00')
+            ->createOne();
+
+        $response = $this
+            ->actingAs($user, 'sanctum')
+            ->patchJson(
+                "/api/reservations/{$reservation->id}/cancel",
+                [
+                    'create_refund' => true,
+                    'refund_reason' => 'Cancha no disponible',
+                ]
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.status',
+                'cancelled'
+            );
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'cancelled',
+        ]);
+
+        $this->assertDatabaseHas('payment_refunds', [
+            'reservation_id' => $reservation->id,
+            'amount' => '50000.00',
+            'status' => RefundStatus::PENDING->value,
+            'reason' => 'Cancha no disponible',
+            'created_by_user_id' => $user->id,
+            'method' => null,
+            'completed_by_user_id' => null,
+            'completed_at' => null,
+        ]);
+    }
+
+    public function test_cancelacion_con_create_refund_no_genera_refund_si_no_hay_pagos_aprobados(): void
+    {
+        [$user, $club, $branch, $court] =
+            $this->createBaseScenario('reservation.cancel');
+
+        $reservation = Reservation::factory()
+            ->confirmed()
+            ->createOne([
+                'court_id' => $court->id,
+            ]);
+
+        Payment::factory()
+            ->pending()
+            ->forReservation($reservation)
+            ->withAmount('50000.00')
+            ->createOne();
+
+        $response = $this
+            ->actingAs($user, 'sanctum')
+            ->patchJson(
+                "/api/reservations/{$reservation->id}/cancel",
+                [
+                    'create_refund' => true,
+                    'refund_reason' => 'Cancelación administrativa',
+                ]
+            );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'cancelled',
+        ]);
+
+        $this->assertDatabaseMissing('payment_refunds', [
+            'reservation_id' => $reservation->id,
+        ]);
+    }
+
+
+    public function test_refund_generado_por_cancelacion_registra_al_usuario_que_cancelo(): void
+    {
+        [$user, $club, $branch, $court] =
+            $this->createBaseScenario('reservation.cancel');
+
+        $reservation = Reservation::factory()
+            ->confirmed()
+            ->createOne([
+                'court_id' => $court->id,
+            ]);
+
+        Payment::factory()
+            ->approved()
+            ->forReservation($reservation)
+            ->withAmount('30000.00')
+            ->createOne();
+
+        $this
+            ->actingAs($user, 'sanctum')
+            ->patchJson(
+                "/api/reservations/{$reservation->id}/cancel",
+                [
+                    'create_refund' => true,
+                ]
+            )
+            ->assertOk();
+
+        $refund = PaymentRefund::query()
+            ->where('reservation_id', $reservation->id)
+            ->first();
+
+        $this->assertNotNull($refund);
+
+        $this->assertSame(
+            $user->id,
+            $refund->created_by_user_id
+        );
+    }
+
+    public function test_usuario_sin_permiso_no_puede_cancelar_y_generar_refund(): void
+    {
+        [$user, $club, $branch, $court] =
+            $this->createBaseScenario('reservation.view');
+
+        $reservation = Reservation::factory()
+            ->confirmed()
+            ->createOne([
+                'court_id' => $court->id,
+            ]);
+
+        Payment::factory()
+            ->approved()
+            ->forReservation($reservation)
+            ->withAmount('30000.00')
+            ->createOne();
+
+        $this
+            ->actingAs($user, 'sanctum')
+            ->patchJson(
+                "/api/reservations/{$reservation->id}/cancel",
+                [
+                    'create_refund' => true,
+                ]
+            )
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('payment_refunds', [
+            'reservation_id' => $reservation->id,
+        ]);
+
+        $reservation->refresh();
+
+        $this->assertNotSame(
+            'CANCELLED',
+            $reservation->status->value
+        );
+    }
+
+
+    public function test_create_refund_debe_ser_booleano(): void
+    {
+        [$user, $club, $branch, $court] =
+            $this->createBaseScenario('reservation.cancel');
+
+        $reservation = Reservation::factory()
+            ->confirmed()
+            ->createOne([
+                'court_id' => $court->id,
+            ]);
+
+        $this
+            ->actingAs($user, 'sanctum')
+            ->patchJson(
+                "/api/reservations/{$reservation->id}/cancel",
+                [
+                    'create_refund' => 'cualquier cosa',
+                ]
+            )
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'create_refund',
+            ]);
     }
 
     private function createCourtScenario(): array

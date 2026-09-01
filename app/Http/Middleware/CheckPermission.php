@@ -4,11 +4,13 @@ namespace App\Http\Middleware;
 
 use App\Application\Authorization\AuthorizationService;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
+use App\Domain\Payments\Exceptions\PaymentRefundNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Courts\Exceptions\CourtNotFoundException;
 use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Memberships\Exceptions\MembershipNotFoundException;
 use App\Domain\Memberships\Repositories\MembershipRepository;
+use App\Domain\Payments\Repositories\PaymentRefundRepository;
 use App\Domain\Pricing\Exceptions\CourtPriceNotFoundException;
 use App\Domain\Pricing\Exceptions\CourtPriceRuleNotFoundException;
 use App\Domain\Pricing\Repositories\CourtPriceRepository;
@@ -30,6 +32,7 @@ final class CheckPermission
         private CourtRepository $courts,
         private CourtPriceRepository $prices,
         private ReservationRepository $reservations,
+        private PaymentRefundRepository $refunds,
     ) {}
 
     public function handle(
@@ -93,6 +96,7 @@ final class CheckPermission
             'court_promotion' => $this->resolveCourtPromotionScope($request),
             'reservation' => $this->resolveReservationScope($request),
             'payment' => $this->resolvePaymentScope($request),
+            'refund' => $this->resolveRefundScope($request),
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
             ),
@@ -732,6 +736,81 @@ final class CheckPermission
             throw new CourtNotFoundException();
         }
 
+        $branch = $this->branches->findById(
+            $court->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return [
+            'clubId' => $branch->getClubId(),
+            'branchId' => $branch->getId(),
+        ];
+    }
+
+    private function resolveRefundScope(Request $request): array
+    {
+        /*
+    |--------------------------------------------------------------------------
+    | VIEW / COMPLETE REFUND
+    |--------------------------------------------------------------------------
+    |
+    | GET   /refunds/{id}
+    | PATCH /refunds/{id}/complete
+    |
+    | El {id} pertenece al PaymentRefund.
+    |
+    */
+
+        $refundId = $request->route('id');
+
+        if ($refundId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar la devolución.'
+            );
+        }
+
+        $refund = $this->refunds->findById(
+            (int) $refundId
+        );
+
+        if ($refund === null) {
+            throw new PaymentRefundNotFoundException();
+        }
+
+        /*
+     * PaymentRefund
+     *      ↓
+     * Reservation
+     */
+        $reservation = $this->reservations->findById(
+            $refund->getReservationId()
+        );
+
+        if ($reservation === null) {
+            throw new ReservationNotFoundException();
+        }
+
+        /*
+     * Reservation
+     *      ↓
+     * Court
+     */
+        $court = $this->courts->findById(
+            $reservation->getCourtId()
+        );
+
+        if ($court === null) {
+            throw new CourtNotFoundException();
+        }
+
+        /*
+     * Court
+     *      ↓
+     * Branch
+     */
         $branch = $this->branches->findById(
             $court->getBranchId()
         );

@@ -44,8 +44,12 @@ final class PermissionSeeder extends Seeder
             ['name' => 'reservation.view', 'description' => 'Ver reservas'],
             ['name' => 'reservation.cancel', 'description' => 'Cancelar reservas'],
             ['name' => 'reservation.confirm', 'description' => 'Confirmar reservas'],
+
             ['name' => 'payment.create', 'description' => 'Registrar pagos manuales'],
             ['name' => 'payment.view', 'description' => 'Ver pagos de reservas'],
+
+            ['name' => 'refund.view', 'description' => 'Ver devoluciones'],
+            ['name' => 'refund.complete', 'description' => 'Completar devoluciones'],
         ];
 
         foreach ($permissions as $permission) {
