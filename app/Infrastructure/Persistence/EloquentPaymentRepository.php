@@ -46,7 +46,7 @@ final class EloquentPaymentRepository implements PaymentRepository
     {
         return PaymentModel::query()
             ->where('reservation_id', $reservationId)
-            ->orderBy('id')
+            ->orderBy('created_at')
             ->get()
             ->map(
                 fn(PaymentModel $model) => $this->toDomain($model)
