@@ -8,6 +8,7 @@ use App\Models\Club;
 use App\Models\Court;
 use App\Models\CourtPrice;
 use App\Models\Membership;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\TipoCourt;
@@ -548,6 +549,98 @@ final class ReservationTest extends TestCase
         $response->assertJsonValidationErrors([
             'confirmed',
         ]);
+    }
+
+
+    public function test_detalle_de_reserva_incluye_resumen_financiero_con_multiples_pagos(): void
+    {
+        [
+            $user,
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createBaseScenario(
+            permission: 'reservation.view'
+        );
+
+        /**
+         * Reserva total: $40.000
+         */
+        $reservation = Reservation::factory()
+            ->for($court)
+            ->confirmed()
+            ->withTotalPrice('40000.00')
+            ->createOne();
+
+        /**
+         * Pagos aprobados:
+         *
+         * 12.000 + 8.000 = 20.000
+         */
+        Payment::factory()
+            ->forReservation($reservation)
+            ->approved()
+            ->withAmount('12000.00')
+            ->createOne();
+
+        Payment::factory()
+            ->forReservation($reservation)
+            ->approved()
+            ->withAmount('8000.00')
+            ->createOne();
+
+        /**
+         * Estos NO tienen que entrar en el total aprobado.
+         */
+        Payment::factory()
+            ->forReservation($reservation)
+            ->pending()
+            ->withAmount('10000.00')
+            ->createOne();
+
+        Payment::factory()
+            ->forReservation($reservation)
+            ->rejected()
+            ->withAmount('5000.00')
+            ->createOne();
+
+        $response = $this
+            ->actingAs($user, 'sanctum')
+            ->getJson(
+                "/api/reservations/{$reservation->id}"
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.id',
+                $reservation->id
+            )
+            ->assertJsonPath(
+                'data.total_price',
+                '40000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_summary.total_price',
+                '40000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_summary.approved_amount',
+                '20000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_summary.required_deposit',
+                '20000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_summary.remaining_amount',
+                '20000.00'
+            )
+            ->assertJsonPath(
+                'data.payment_summary.financial_status',
+                'pago_senia'
+            );
     }
 
     private function createCourtScenario(): array
