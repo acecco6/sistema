@@ -1,8 +1,8 @@
 # Estado del proyecto — Sistema de gestión de clubes
 
 > Documento de continuidad para retomar el proyecto en futuras conversaciones.
-> Actualizado: **27/08/2026**.
-> Fuente de esta actualización: estado real del proyecto entregado en `sistema-master(4).zip`.
+> Actualizado: **01/09/2026**.
+> Fuente de esta actualización: estado real del proyecto entregado en `sistema-master (2).zip` y cierre funcional de Payments + Refunds.
 
 ---
 
@@ -30,7 +30,9 @@ La idea no es solamente construir CRUDs, sino profundizar en:
 - Race conditions y concurrencia.
 - Jobs y Scheduler.
 - Feature Tests y Unit Tests.
-- Más adelante: Payments, webhooks, idempotencia, índices y `EXPLAIN`.
+- Payments, Mercado Pago, webhooks e idempotencia.
+- Refunds manuales y trazabilidad financiera.
+- Más adelante: notifications/events/queues, reportes, índices y `EXPLAIN`.
 
 El proyecto actualmente usa:
 
@@ -71,7 +73,8 @@ app/
 │   ├── Roles/
 │   ├── Courts/
 │   ├── Pricing/
-│   └── Reservations/
+│   ├── Reservations/
+│   └── Payments/
 │
 ├── Infrastructure/
 │   ├── Auth/
@@ -174,6 +177,10 @@ TipoCourtRepository                → EloquentTipoCourtRepository
 CourtPriceRepository               → EloquentCourtPriceRepository
 ReservationRepository              → EloquentReservationRepository
 IntervalTimeTipoCourtRepository    → EloquentIntervalTimeTipoCourtRepository
+PaymentRepository                  → EloquentPaymentRepository
+PaymentRefundRepository            → EloquentPaymentRefundRepository
+PaymentGateway                     → MercadoPagoPaymentGateway
+WebhookSignatureValidator          → MercadoPagoWebhookSignatureValidator
 ```
 
 ---
@@ -1926,13 +1933,9 @@ Esto es una mejora de cobertura, no una indicación de que la implementación ac
 
 ---
 
-# 35. Próximo bloque recomendado
+# 35. Ownership de reservas — implementado
 
-El próximo bloque funcional que había quedado planteado es permitir que el dueño de la reserva pueda gestionarla sin usar permisos administrativos.
-
-## Cliente autenticado
-
-Propuesta:
+El cliente autenticado ya puede administrar solamente sus propias reservas sin usar RBAC administrativo:
 
 ```text
 GET   /api/me/reservations
@@ -1940,77 +1943,161 @@ GET   /api/me/reservations/{id}
 PATCH /api/me/reservations/{id}/cancel
 ```
 
-Regla:
+La autorización se realiza por ownership (`customer_user_id`), no mediante `permission`.
 
-```text
-customer_user_id debe ser auth()->id()
-```
-
-No usar permisos RBAC administrativos para estas rutas.
-
-Si la reserva no pertenece al usuario, preferir respuesta tipo `404` para no filtrar existencia.
-
-## Guest mediante `public_token`
-
-Propuesta:
+El guest administra su reserva mediante `public_token`:
 
 ```text
 GET   /api/public/reservations/{token}
 PATCH /api/public/reservations/{token}/cancel
 ```
 
-El `public_token` funciona como capacidad/bearer secret.
-
-No exponer operaciones públicas basadas solamente en ID secuencial.
-
-El repository ya tiene:
-
-```php
-findByPublicToken(string $token): ?Reservation
-```
-
-Faltaría agregar, para cliente autenticado, algo como:
-
-```php
-findByCustomerUser(int $userId): array
-```
-
-si se implementa la colección propia.
+El token público funciona como capacidad/bearer secret y no debe sustituirse por IDs secuenciales públicos.
 
 ---
 
-# 36. Payments — módulo futuro
+# 36. Payments — implementado
 
-`Domain/Payments/Entities/Payment.php` existe como placeholder, pero Payments todavía no está implementado funcionalmente.
+Payments dejó de ser un placeholder y está implementado funcionalmente.
 
-Objetivo futuro:
+Flujo principal de cliente/guest:
 
 ```text
-Reservation
+Reservation PENDING
 ↓
-Payment
+ReservationPaymentPolicy calcula seña 50%
 ↓
-Payment Provider
+MercadoPagoPaymentGateway crea Checkout Pro
 ↓
-Webhook
+Payment PENDING
 ↓
-Confirm Reservation
+Webhook Mercado Pago verificado
+↓
+Payment APPROVED
+↓
+si Reservation sigue vigente y se alcanzó la seña
+↓
+Reservation CONFIRMED
 ```
 
-Temas a estudiar allí:
+Reglas importantes:
 
-- idempotency keys;
-- webhooks duplicados;
-- eventos fuera de orden;
-- retries;
-- state machine;
-- transactions;
-- consistencia;
-- confirmación de Reservation solamente después del pago cuando corresponda.
+- cliente autenticado y guest requieren actualmente 50% para confirmar;
+- `PENDING` vence en 15 minutos;
+- un pago tardío nunca revive una reserva `EXPIRED`;
+- el webhook es la fuente de confirmación del pago, no el redirect del navegador;
+- el procesamiento está diseñado para ser idempotente ante webhooks repetidos;
+- Reservation y Payment mantienen estados independientes;
+- staff puede crear una Reservation `CONFIRMED` sin Payment previo;
+- una Reservation puede tener múltiples Payments;
+- pagos manuales administrativos permiten `CASH`, `TRANSFER`, `CARD` y `OTHER`; el flujo manual no permite crear arbitrariamente un pago `MERCADO_PAGO`;
+- no se permite registrar manualmente un monto superior al saldo financiero restante.
+
+Endpoints relevantes:
+
+```text
+POST /api/webhooks/mercadopago
+POST /api/courts/{court_id}/book
+POST /api/public/courts/{court_id}/book
+POST /api/reservations/{id}/payments       payment.create
+GET  /api/reservations/{id}/payments       payment.view
+```
+
+El historial devuelve Payments en orden cronológico junto con `payment_summary`.
+
+Resumen financiero actual:
+
+```text
+total_price
+approved_amount
+required_deposit
+refunded_amount
+net_paid_amount
+remaining_amount
+financial_status
+```
+
+Estados financieros:
+
+```text
+UNPAID
+PARTIALLY_PAID
+DEPOSIT_PAID
+PAID
+OVERPAID
+```
+
+Solo Payments `APPROVED` forman `approved_amount`.
 
 ---
 
-# 37. Índices / SQL / performance pendientes
+# 37. Refunds — implementado
+
+Las devoluciones manuales están modeladas con `PaymentRefund` y no modifican/eliminan el Payment original.
+
+El sistema no ejecuta transferencias ni devoluciones externas. Registra una obligación `PENDING` y permite que el personal la marque `COMPLETED` después de devolver el dinero manualmente.
+
+Estados:
+
+```text
+PENDING
+COMPLETED
+CANCELLED
+```
+
+Cancelación administrativa:
+
+```json
+{
+    "create_refund": true,
+    "refund_reason": "Cancelación autorizada por administración"
+}
+```
+
+La cancelación y la creación del refund se realizan en la misma transacción.
+
+Cálculos:
+
+```text
+approved_amount = suma Payments APPROVED
+committed_refunds = Refund PENDING + COMPLETED
+refundable_amount = approved_amount - committed_refunds
+
+refunded_amount = suma Refund COMPLETED
+net_paid_amount = approved_amount - refunded_amount
+remaining_amount = max(total_price - net_paid_amount, 0)
+```
+
+Un Refund `PENDING` compromete monto para impedir duplicados, pero no reduce `net_paid_amount`. Solo `COMPLETED` representa dinero efectivamente devuelto.
+
+Endpoints:
+
+```text
+GET   /api/refunds/{id}                         refund.view
+PATCH /api/refunds/{id}/complete                refund.complete
+GET   /api/branches/{branch_id}/refunds         refund.collection
+GET   /api/branches/{branch_id}/refunds?status=PENDING
+```
+
+`refund.collection` es scope-only y no se persiste como Permission, igual que las demás `.collection` especiales.
+
+`CheckPermission` resuelve el scope:
+
+```text
+Refund → Reservation → Court → Branch → Membership
+```
+
+El módulo está cubierto por tests de dominio, repository, handlers, endpoints, permisos/scope, cancelación con refund y resumen financiero.
+
+Documento detallado:
+
+```text
+docs/Devoluciones-Implementacion.md
+```
+
+---
+
+# 38. Índices / SQL / performance pendientes
 
 Ya existe índice de disponibilidad sobre:
 
@@ -2033,13 +2120,14 @@ Candidatos a analizar:
 court_id + status + starts_at + ends_at
 expires_at
 branch_id + tipo_court_id en pricing/courts
+payment/refund queries de historial y reportes
 ```
 
 No agregar índices solamente porque “parecen útiles”; medir consultas reales.
 
 ---
 
-# 38. Decisiones de diseño que NO hay que olvidar
+# 39. Decisiones de diseño que NO hay que olvidar
 
 1. Eloquent no entra al Domain.
 2. Controllers coordinan HTTP, no contienen reglas centrales.
@@ -2054,76 +2142,86 @@ No agregar índices solamente porque “parecen útiles”; medir consultas real
 11. `club.view` tiene comportamiento especial a nivel Club.
 12. Pricing es histórico: una Reservation guarda `total_price` + segmentos.
 13. `PriceResolver` trabaja minuto a minuto y prorratea sobre tarifa horaria.
-14. Toda creación de Reservation funcional debe pasar por `CreateReservationHandler`.
+14. Toda creación funcional de Reservation pasa por `CreateReservationHandler`.
 15. `CreateReservationHandler` toma `lockForUpdate()` antes de validar disponibilidad.
 16. `PENDING` expira en 15 minutos actualmente.
 17. Un `PENDING` vencido deja de bloquear aunque el Job todavía no lo haya marcado `EXPIRED`.
 18. Guest y customer autenticado no pueden forzar `confirmed`.
-19. El personal sí puede crear `PENDING` o `CONFIRMED` mediante el request administrativo.
+19. El personal puede crear `PENDING` o `CONFIRMED` mediante el endpoint administrativo.
 20. La duración mínima de una Reservation es 60 minutos.
 21. `duration_minutes` de Availability tiene default 60.
-22. `duration_minutes` debe ser múltiplo de `interval_minutes` en el código actual.
-23. `interval_minutes` define los posibles inicios; `duration_minutes` define el final del turno.
-24. En generación de slots: avanzar cursor por `interval_minutes`, no por duración.
+22. `duration_minutes` debe ser múltiplo de `interval_minutes`.
+23. `interval_minutes` define inicios; `duration_minutes` define el final del turno.
+24. En generación de slots el cursor avanza por `interval_minutes`, no por duración.
 25. No se soportan reservas cruzando medianoche por ahora.
-26. `public_token` existe para evitar administrar reservas públicas por IDs secuenciales.
+26. `public_token` protege el flujo guest y no debe exponerse innecesariamente.
+27. Reservation y Payment tienen estados independientes.
+28. Cliente/guest requieren actualmente 50% para confirmar; staff puede confirmar sin pago.
+29. Un Payment APPROVED tardío no revive Reservation EXPIRED/CANCELLED.
+30. Webhooks de pago deben ser idempotentes y verificados.
+31. Los pagos manuales nunca pueden superar el saldo restante.
+32. Payment y PaymentRefund son conceptos separados y ambos conservan historial.
+33. Crear Refund PENDING no significa dinero devuelto.
+34. Refund PENDING + COMPLETED comprometen monto; CANCELLED no.
+35. Solo Refund COMPLETED reduce `net_paid_amount`.
+36. El `financial_status` se calcula sobre `net_paid_amount`.
+37. Cancel Reservation + creación de Refund deben ser atómicos.
+38. Completar Refund usa transacción + `findByIdForUpdate()`.
+39. Los cálculos monetarios usan decimal/BCMath, nunca float.
 
 ---
 
-# 39. Estado actual resumido
+# 40. Estado actual resumido
 
 Implementado:
 
 ```text
 ✅ Auth con Sanctum
-✅ Clubs
-✅ Branches
-✅ Memberships
-✅ Roles
-✅ Permissions
-✅ AuthorizationService
-✅ CheckPermission por scope
-✅ Courts
-✅ TipoCourt
-✅ IntervalTimeTipoCourt
-✅ Pricing base
-✅ Promotions / CourtPriceRules
-✅ PriceResolver
-✅ Unit Tests de Pricing
-✅ Reservations
-✅ Guest booking
-✅ Authenticated customer booking
-✅ Staff booking
-✅ Reservation pricing snapshot
-✅ Availability por Court
-✅ Availability por Branch + TipoCourt
-✅ duration_minutes configurable en Availability
-✅ duración mínima 60
-✅ Cancel Reservation administrativa
-✅ Confirm Reservation administrativa
-✅ PENDING expiration
-✅ ExpirePendingReservationsJob
-✅ Scheduler cada minuto
+✅ Clubs / Branches
+✅ Memberships / Roles / Permissions
+✅ AuthorizationService + CheckPermission por scope
+✅ Courts / TipoCourt / IntervalTimeTipoCourt
+✅ Pricing base + promociones + PriceResolver
+✅ Reservations y snapshot histórico de precios
+✅ Availability por Court y Branch + TipoCourt
+✅ duration_minutes configurable, mínimo 60
+✅ Guest booking + public_token
+✅ Customer autenticado: listar/ver/cancelar reservas propias
+✅ Guest: ver/cancelar por public_token
+✅ Staff booking / confirmación / cancelación
+✅ PENDING expiration + Job + Scheduler
 ✅ protección de doble reserva con transaction + lockForUpdate
-✅ Feature Tests de Reservations/Pricing/Auth/Authorization
+✅ Payments 1:N por Reservation
+✅ Mercado Pago Checkout Pro
+✅ webhook verificado e idempotente
+✅ confirmación por seña del 50%
+✅ protección contra pago tardío que reviva reservas vencidas
+✅ pagos manuales administrativos
+✅ historial de pagos
+✅ payment summary
+✅ Refunds manuales PENDING / COMPLETED / CANCELLED
+✅ cancelación administrativa con create_refund opcional
+✅ listado/detalle/completado de Refunds
+✅ permisos refund.view / refund.complete y scope de refund.collection
+✅ resumen financiero con refunded_amount + net_paid_amount
+✅ tests de Payments + Refunds + resumen financiero
 ```
 
 Pendiente / próximo:
 
 ```text
-⬜ tests específicos de duration_minutes en Availability
-⬜ cliente autenticado: listar/ver/cancelar reservas propias
-⬜ guest: ver/cancelar mediante public_token
-⬜ Payments
-⬜ webhooks e idempotencia
-⬜ eventos/notifications/queues posteriores a confirmación
-⬜ análisis MySQL con EXPLAIN
-⬜ performance e índices adicionales basados en medición
+⬜ notifications/events/queues posteriores a confirmación/pago
+⬜ reportes financieros / caja por Branch y período
+⬜ conciliación más completa con Mercado Pago
+⬜ porcentaje de seña configurable por Club
+⬜ expiración configurable por Club
+⬜ análisis MySQL con EXPLAIN / EXPLAIN ANALYZE
+⬜ performance e índices adicionales basados en medición real
 ```
 
 ---
 
-# 40. Cómo retomar el proyecto en una próxima conversación
+# 41. Cómo retomar el proyecto en una próxima conversación
 
 NO empezar de cero.
 
@@ -2149,7 +2247,7 @@ DTO
 ApiResponse
 ```
 
-Para autorización administrativa:
+Autorización administrativa:
 
 ```text
 Resource
@@ -2163,16 +2261,14 @@ Role
 Permission = route name
 ```
 
-Para crear Reservation:
+Creación de Reservation:
 
 ```text
 Request
 ↓
 CreateReservationHandler
 ↓
-Transaction
-↓
-lock Court
+Transaction + lock Court
 ↓
 ReservationValidator
 ↓
@@ -2180,33 +2276,51 @@ PriceResolver
 ↓
 Reservation + historical price segments
 ↓
+Checkout/Payment cuando corresponde
+↓
 Commit
 ```
 
-Para Availability:
+Payments:
 
 ```text
-date
-+
-duration_minutes (default 60)
+Reservation PENDING
 ↓
-interval_minutes determina inicios
+Payment PENDING
 ↓
-duration_minutes determina fin de cada slot
+Mercado Pago webhook
 ↓
-se valida el rango completo contra blocking reservations
+Payment APPROVED
+↓
+ReservationPaymentPolicy
+↓
+Reservation CONFIRMED si corresponde
+```
+
+Refunds:
+
+```text
+Admin cancela
+↓
+create_refund=true
+↓
+Reservation CANCELLED + Refund PENDING (misma transaction)
+↓
+admin devuelve dinero manualmente
+↓
+Refund COMPLETED
+↓
+ReservationPaymentSummary recalcula net_paid_amount
 ```
 
 Próxima dirección recomendada:
 
 ```text
-Customer/Guest ownership de reservas
+Payments + Refunds cerrados
 ↓
-Payments
+Events / Notifications / Queues
 ↓
-webhooks/idempotencia
+Reportes financieros / caja
 ↓
-notifications/events/queues
-↓
-performance/EXPLAIN
+Performance / EXPLAIN
 ```
