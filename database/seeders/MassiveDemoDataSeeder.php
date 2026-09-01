@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Payments\Enums\PaymentMethod;
+use App\Domain\Payments\Enums\PaymentStatus;
+use App\Domain\Payments\Enums\RefundStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Models\Branch;
 use App\Models\Club;
@@ -9,6 +12,8 @@ use App\Models\Court;
 use App\Models\CourtPrice;
 use App\Models\CourtPriceRule;
 use App\Models\Membership;
+use App\Models\Payment;
+use App\Models\PaymentRefund;
 use App\Models\Reservation;
 use App\Models\ReservationPriceSegment;
 use App\Models\Role;
@@ -419,6 +424,214 @@ final class MassiveDemoDataSeeder extends Seeder
             'court_price_rule_id' => $rule?->id,
             'rule_name' => $rule?->name,
         ]);
+
+        $this->crearEscenarioFinanciero(
+            reservation: $reservation,
+            status: $status,
+            court: $court,
+            staff: $createdBy,
+            index: $index,
+        );
+    }
+
+    private function crearEscenarioFinanciero(
+        Reservation $reservation,
+        ReservationStatus $status,
+        Court $court,
+        ?User $staff,
+        int $index,
+    ): void {
+        $total = $this->money($reservation->total_price);
+        $deposit = bcdiv($total, '2', 2);
+        $staff ??= $this->buscarStaffParaCourt($court);
+
+        if ($status === ReservationStatus::PENDING) {
+            // La mayoría de las pending tienen checkout pendiente; algunas ya fueron rechazadas.
+            $paymentStatus = $reservation->expires_at !== null && $reservation->expires_at->isPast()
+                ? PaymentStatus::REJECTED
+                : PaymentStatus::PENDING;
+
+            $this->crearPago(
+                reservation: $reservation,
+                amount: $deposit,
+                method: PaymentMethod::MERCADO_PAGO,
+                status: $paymentStatus,
+            );
+
+            return;
+        }
+
+        if ($status === ReservationStatus::EXPIRED) {
+            $this->crearPago(
+                reservation: $reservation,
+                amount: $deposit,
+                method: PaymentMethod::MERCADO_PAGO,
+                status: fake()->randomElement([
+                    PaymentStatus::REJECTED,
+                    PaymentStatus::CANCELLED,
+                ]),
+            );
+
+            return;
+        }
+
+        if ($status === ReservationStatus::CONFIRMED) {
+            // Alternamos entre seña, pago total y pago dividido en dos movimientos.
+            match ($index % 3) {
+                0 => $this->crearPago(
+                    reservation: $reservation,
+                    amount: $deposit,
+                    method: PaymentMethod::MERCADO_PAGO,
+                    status: PaymentStatus::APPROVED,
+                ),
+                1 => $this->crearPago(
+                    reservation: $reservation,
+                    amount: $total,
+                    method: PaymentMethod::TRANSFER,
+                    status: PaymentStatus::APPROVED,
+                    createdByUserId: $staff?->id,
+                ),
+                default => $this->crearPagoDividido(
+                    reservation: $reservation,
+                    total: $total,
+                    staff: $staff,
+                ),
+            };
+
+            return;
+        }
+
+        if ($status === ReservationStatus::COMPLETED) {
+            $this->crearPagoDividido(
+                reservation: $reservation,
+                total: $total,
+                staff: $staff,
+            );
+
+            return;
+        }
+
+        if ($status === ReservationStatus::CANCELLED) {
+            // Algunas canceladas nunca llegaron a cobrar nada.
+            if (fake()->boolean(20)) {
+                return;
+            }
+
+            $payment = $this->crearPago(
+                reservation: $reservation,
+                amount: $total,
+                method: $index % 2 === 0
+                    ? PaymentMethod::MERCADO_PAGO
+                    : PaymentMethod::TRANSFER,
+                status: PaymentStatus::APPROVED,
+                createdByUserId: $index % 2 === 0 ? null : $staff?->id,
+            );
+
+            $refundStatus = fake()->randomElement([
+                RefundStatus::PENDING,
+                RefundStatus::COMPLETED,
+                RefundStatus::CANCELLED,
+            ]);
+
+            // Un refund COMPLETED siempre debe identificar quién lo completó.
+            if ($refundStatus === RefundStatus::COMPLETED && $staff === null) {
+                $refundStatus = RefundStatus::PENDING;
+            }
+
+            $this->crearRefund(
+                reservation: $reservation,
+                payment: $payment,
+                amount: $total,
+                status: $refundStatus,
+                staff: $staff,
+            );
+        }
+    }
+
+    private function crearPagoDividido(
+        Reservation $reservation,
+        string $total,
+        ?User $staff,
+    ): void {
+        $first = bcdiv($total, '2', 2);
+        $second = bcsub($total, $first, 2);
+
+        $this->crearPago(
+            reservation: $reservation,
+            amount: $first,
+            method: PaymentMethod::CASH,
+            status: PaymentStatus::APPROVED,
+            createdByUserId: $staff?->id,
+        );
+
+        $this->crearPago(
+            reservation: $reservation,
+            amount: $second,
+            method: PaymentMethod::CARD,
+            status: PaymentStatus::APPROVED,
+            createdByUserId: $staff?->id,
+        );
+    }
+
+    private function crearPago(
+        Reservation $reservation,
+        string $amount,
+        PaymentMethod $method,
+        PaymentStatus $status,
+        ?int $createdByUserId = null,
+    ): Payment {
+        $isMercadoPago = $method === PaymentMethod::MERCADO_PAGO;
+        $isApproved = $status === PaymentStatus::APPROVED;
+
+        return Payment::create([
+            'reservation_id' => $reservation->id,
+            'amount' => $amount,
+            'method' => $method->value,
+            'status' => $status->value,
+            'provider' => $isMercadoPago ? 'mercadopago' : null,
+            'provider_preference_id' => $isMercadoPago ? 'pref_' . Str::uuid() : null,
+            'provider_payment_id' => $isMercadoPago && $isApproved
+                ? 'mp_' . Str::uuid()
+                : null,
+            'external_reference' => 'MASSIVE-PAY-' . Str::uuid(),
+            'checkout_url' => $isMercadoPago
+                ? 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=demo'
+                : null,
+            'created_by_user_id' => $createdByUserId,
+            'paid_at' => $isApproved ? now() : null,
+        ]);
+    }
+
+    private function crearRefund(
+        Reservation $reservation,
+        Payment $payment,
+        string $amount,
+        RefundStatus $status,
+        ?User $staff,
+    ): PaymentRefund {
+        $completed = $status === RefundStatus::COMPLETED;
+
+        return PaymentRefund::create([
+            'reservation_id' => $reservation->id,
+            'payment_id' => $payment->id,
+            'amount' => $amount,
+            'status' => $status,
+            'reason' => 'Cancelación de reserva demo',
+            'method' => $completed ? PaymentMethod::TRANSFER : null,
+            'notes' => $completed
+                ? 'Devolución completada en dataset masivo.'
+                : ($status === RefundStatus::PENDING
+                    ? 'Devolución pendiente en dataset masivo.'
+                    : 'Devolución cancelada en dataset masivo.'),
+            'created_by_user_id' => $staff?->id,
+            'completed_by_user_id' => $completed ? $staff?->id : null,
+            'completed_at' => $completed ? now() : null,
+        ]);
+    }
+
+    private function money(string|float $amount): string
+    {
+        return number_format((float) $amount, 2, '.', '');
     }
 
     /**
@@ -442,7 +655,9 @@ final class MassiveDemoDataSeeder extends Seeder
             default => 18,
         };
 
-        $duration = $intervalMinutes;
+        // La reserva mínima del dominio es 60 minutos.
+        // Para intervalos de 30, sigue siendo múltiplo válido del intervalo.
+        $duration = max(60, $intervalMinutes);
 
         return match ($scenario) {
             // PENDING vigente: bloquea.

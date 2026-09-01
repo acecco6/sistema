@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Payments\Enums\PaymentMethod;
+use App\Domain\Payments\Enums\PaymentStatus;
+use App\Domain\Payments\Enums\RefundStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Models\Branch;
 use App\Models\Club;
@@ -9,6 +12,8 @@ use App\Models\Court;
 use App\Models\CourtPrice;
 use App\Models\CourtPriceRule;
 use App\Models\Membership;
+use App\Models\Payment;
+use App\Models\PaymentRefund;
 use App\Models\Reservation;
 use App\Models\ReservationPriceSegment;
 use App\Models\Role;
@@ -355,7 +360,11 @@ final class AlejoDemoSeeder extends Seeder
                 // Cada cancha arranca en una hora distinta para evitar overlaps accidentales.
                 $hourOffset = $courtIndex * 3;
 
-                $this->createReservationWithSnapshot(
+                /*
+                 * 1) CONFIRMED + seña aprobada.
+                 * Sirve para probar DEPOSIT_PAID y un pago aprobado de Mercado Pago.
+                 */
+                $confirmedWithDeposit = $this->createReservationWithSnapshot(
                     court: $court,
                     startsAt: CarbonImmutable::now()->addDays(2)->setTime(17 + $hourOffset, 0),
                     endsAt: CarbonImmutable::now()->addDays(2)->setTime(18 + $hourOffset, 0),
@@ -364,10 +373,20 @@ final class AlejoDemoSeeder extends Seeder
                     customerUserId: $customer->id,
                     createdByUserId: $alejo->id,
                     expiresAt: null,
-                    notes: 'Reserva confirmada creada por staff.',
+                    notes: 'Reserva confirmada con seña aprobada.',
                 );
 
-                $this->createReservationWithSnapshot(
+                $this->createPayment(
+                    reservation: $confirmedWithDeposit,
+                    amount: $this->half($confirmedWithDeposit->total_price),
+                    method: PaymentMethod::MERCADO_PAGO,
+                    status: PaymentStatus::APPROVED,
+                );
+
+                /*
+                 * 2) PENDING vigente + checkout pendiente de Mercado Pago.
+                 */
+                $pendingActive = $this->createReservationWithSnapshot(
                     court: $court,
                     startsAt: CarbonImmutable::now()->addDays(3)->setTime(17 + $hourOffset, 0),
                     endsAt: CarbonImmutable::now()->addDays(3)->setTime(18 + $hourOffset, 0),
@@ -376,10 +395,21 @@ final class AlejoDemoSeeder extends Seeder
                     customerUserId: $customer->id,
                     createdByUserId: $customer->id,
                     expiresAt: CarbonImmutable::now()->addMinutes(15),
-                    notes: 'Pending vigente de cliente autenticado.',
+                    notes: 'Pending vigente de cliente autenticado con pago pendiente.',
                 );
 
-                $this->createReservationWithSnapshot(
+                $this->createPayment(
+                    reservation: $pendingActive,
+                    amount: $this->half($pendingActive->total_price),
+                    method: PaymentMethod::MERCADO_PAGO,
+                    status: PaymentStatus::PENDING,
+                );
+
+                /*
+                 * 3) PENDING vencida + pago rechazado.
+                 * Útil para ExpirePendingReservationsJob y webhook rechazado.
+                 */
+                $pendingExpired = $this->createReservationWithSnapshot(
                     court: $court,
                     startsAt: CarbonImmutable::now()->addDays(4)->setTime(17 + $hourOffset, 0),
                     endsAt: CarbonImmutable::now()->addDays(4)->setTime(18 + $hourOffset, 0),
@@ -389,10 +419,20 @@ final class AlejoDemoSeeder extends Seeder
                     guestEmail: 'guest.vencido@demo.test',
                     guestPhone: '1111111111',
                     expiresAt: CarbonImmutable::now()->subMinutes(5),
-                    notes: 'Pending vencida para probar ExpirePendingReservationsJob.',
+                    notes: 'Pending vencida para probar expiración y pago rechazado.',
                 );
 
-                $this->createReservationWithSnapshot(
+                $this->createPayment(
+                    reservation: $pendingExpired,
+                    amount: $this->half($pendingExpired->total_price),
+                    method: PaymentMethod::MERCADO_PAGO,
+                    status: PaymentStatus::REJECTED,
+                );
+
+                /*
+                 * 4) EXPIRED + intento de pago cancelado.
+                 */
+                $expired = $this->createReservationWithSnapshot(
                     court: $court,
                     startsAt: CarbonImmutable::now()->addDays(5)->setTime(17 + $hourOffset, 0),
                     endsAt: CarbonImmutable::now()->addDays(5)->setTime(18 + $hourOffset, 0),
@@ -402,10 +442,22 @@ final class AlejoDemoSeeder extends Seeder
                     guestEmail: 'guest.expired@demo.test',
                     guestPhone: '2222222222',
                     expiresAt: CarbonImmutable::now()->subHour(),
-                    notes: 'Reserva ya expirada.',
+                    notes: 'Reserva expirada con pago cancelado.',
                 );
 
-                $this->createReservationWithSnapshot(
+                $this->createPayment(
+                    reservation: $expired,
+                    amount: $this->half($expired->total_price),
+                    method: PaymentMethod::MERCADO_PAGO,
+                    status: PaymentStatus::CANCELLED,
+                );
+
+                /*
+                 * 5) CANCELLED + pago aprobado + refund.
+                 * Primera cancha: refund PENDING.
+                 * Segunda cancha: refund COMPLETED.
+                 */
+                $cancelled = $this->createReservationWithSnapshot(
                     court: $court,
                     startsAt: CarbonImmutable::now()->addDay()->setTime(19 + $hourOffset, 0),
                     endsAt: CarbonImmutable::now()->addDay()->setTime(20 + $hourOffset, 0),
@@ -415,10 +467,68 @@ final class AlejoDemoSeeder extends Seeder
                     createdByUserId: $alejo->id,
                     expiresAt: null,
                     cancelledAt: CarbonImmutable::now()->subHour(),
-                    notes: 'Reserva cancelada demo.',
+                    notes: $courtIndex === 0
+                        ? 'Reserva cancelada con devolución pendiente.'
+                        : 'Reserva cancelada con devolución completada.',
                 );
 
-                $this->createReservationWithSnapshot(
+                $approvedPayment = $this->createPayment(
+                    reservation: $cancelled,
+                    amount: $this->money($cancelled->total_price),
+                    method: PaymentMethod::TRANSFER,
+                    status: PaymentStatus::APPROVED,
+                    createdByUserId: $alejo->id,
+                );
+
+                $this->createRefund(
+                    reservation: $cancelled,
+                    payment: $approvedPayment,
+                    amount: $this->money($cancelled->total_price),
+                    status: $courtIndex === 0
+                        ? RefundStatus::PENDING
+                        : RefundStatus::COMPLETED,
+                    alejo: $alejo,
+                );
+
+                /*
+                 * 6) CANCELLED + refund CANCELLED.
+                 * Permite probar el tercer estado de devoluciones sin afectar
+                 * refunded_amount ni net_paid_amount.
+                 */
+                $cancelledRefund = $this->createReservationWithSnapshot(
+                    court: $court,
+                    startsAt: CarbonImmutable::now()->addDays(6)->setTime(19 + $hourOffset, 0),
+                    endsAt: CarbonImmutable::now()->addDays(6)->setTime(20 + $hourOffset, 0),
+                    status: ReservationStatus::CANCELLED,
+                    hourlyPrice: $basePrice,
+                    customerUserId: $customer->id,
+                    createdByUserId: $alejo->id,
+                    expiresAt: null,
+                    cancelledAt: CarbonImmutable::now()->subMinutes(30),
+                    notes: 'Reserva cancelada con devolución posteriormente cancelada.',
+                );
+
+                $cancelledRefundPayment = $this->createPayment(
+                    reservation: $cancelledRefund,
+                    amount: $this->money($cancelledRefund->total_price),
+                    method: PaymentMethod::OTHER,
+                    status: PaymentStatus::APPROVED,
+                    createdByUserId: $alejo->id,
+                );
+
+                $this->createRefund(
+                    reservation: $cancelledRefund,
+                    payment: $cancelledRefundPayment,
+                    amount: $this->money($cancelledRefund->total_price),
+                    status: RefundStatus::CANCELLED,
+                    alejo: $alejo,
+                );
+
+                /*
+                 * 7) COMPLETED + dos pagos manuales aprobados.
+                 * Permite probar historial con múltiples pagos y PAID.
+                 */
+                $completed = $this->createReservationWithSnapshot(
                     court: $court,
                     startsAt: CarbonImmutable::now()->subDays(2)->setTime(18 + $hourOffset, 0),
                     endsAt: CarbonImmutable::now()->subDays(2)->setTime(19 + $hourOffset, 0),
@@ -427,7 +537,26 @@ final class AlejoDemoSeeder extends Seeder
                     customerUserId: $customer->id,
                     createdByUserId: $alejo->id,
                     expiresAt: null,
-                    notes: 'Reserva completada demo.',
+                    notes: 'Reserva completada y pagada en dos movimientos.',
+                );
+
+                $firstHalf = $this->half($completed->total_price);
+                $secondHalf = bcsub($this->money($completed->total_price), $firstHalf, 2);
+
+                $this->createPayment(
+                    reservation: $completed,
+                    amount: $firstHalf,
+                    method: PaymentMethod::CASH,
+                    status: PaymentStatus::APPROVED,
+                    createdByUserId: $alejo->id,
+                );
+
+                $this->createPayment(
+                    reservation: $completed,
+                    amount: $secondHalf,
+                    method: PaymentMethod::CARD,
+                    status: PaymentStatus::APPROVED,
+                    createdByUserId: $alejo->id,
                 );
             }
         }
@@ -447,7 +576,7 @@ final class AlejoDemoSeeder extends Seeder
         ?CarbonImmutable $expiresAt = null,
         ?CarbonImmutable $cancelledAt = null,
         ?string $notes = null,
-    ): void {
+    ): Reservation {
         $minutes = $startsAt->diffInMinutes($endsAt);
         $subtotal = round($hourlyPrice * ($minutes / 60), 2);
 
@@ -477,6 +606,72 @@ final class AlejoDemoSeeder extends Seeder
             'court_price_rule_id' => null,
             'rule_name' => null,
         ]);
+
+        return $reservation;
+    }
+
+    private function createPayment(
+        Reservation $reservation,
+        string $amount,
+        PaymentMethod $method,
+        PaymentStatus $status,
+        ?int $createdByUserId = null,
+    ): Payment {
+        $isMercadoPago = $method === PaymentMethod::MERCADO_PAGO;
+        $isApproved = $status === PaymentStatus::APPROVED;
+
+        return Payment::create([
+            'reservation_id' => $reservation->id,
+            'amount' => $amount,
+            'method' => $method->value,
+            'status' => $status->value,
+            'provider' => $isMercadoPago ? 'mercadopago' : null,
+            'provider_preference_id' => $isMercadoPago ? 'pref_' . Str::uuid() : null,
+            'provider_payment_id' => $isMercadoPago && $isApproved
+                ? 'mp_' . Str::uuid()
+                : null,
+            'external_reference' => 'DEMO-PAY-' . Str::uuid(),
+            'checkout_url' => $isMercadoPago
+                ? 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=demo'
+                : null,
+            'created_by_user_id' => $createdByUserId,
+            'paid_at' => $isApproved ? now() : null,
+        ]);
+    }
+
+    private function createRefund(
+        Reservation $reservation,
+        Payment $payment,
+        string $amount,
+        RefundStatus $status,
+        User $alejo,
+    ): PaymentRefund {
+        $completed = $status === RefundStatus::COMPLETED;
+
+        return PaymentRefund::create([
+            'reservation_id' => $reservation->id,
+            'payment_id' => $payment->id,
+            'amount' => $amount,
+            'status' => $status,
+            'reason' => 'Cancelación autorizada por administración',
+            'method' => $completed ? PaymentMethod::TRANSFER : null,
+            'notes' => $completed
+                ? 'Devolución demo completada manualmente.'
+                : 'Devolución demo pendiente de realizar.',
+            'created_by_user_id' => $alejo->id,
+            'completed_by_user_id' => $completed ? $alejo->id : null,
+            'completed_at' => $completed ? now() : null,
+        ]);
+    }
+
+    private function half(string|float $amount): string
+    {
+        return bcdiv($this->money($amount), '2', 2);
+    }
+
+    private function money(string|float $amount): string
+    {
+        return number_format((float) $amount, 2, '.', '');
     }
 
     private function intervalForTipoCourt(string $tipo): int
