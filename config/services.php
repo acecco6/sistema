@@ -35,4 +35,35 @@ return [
         ],
     ],
 
+
+    'mercadopago' => [
+        'access_token' => env(
+            'MERCADO_PAGO_ACCESS_TOKEN'
+        ),
+
+        'public_key' => env(
+            'MERCADO_PAGO_PUBLIC_KEY'
+        ),
+
+        'webhook_secret' => env(
+            'MERCADO_PAGO_WEBHOOK_SECRET'
+        ),
+
+        'webhook_url' => env(
+            'MERCADO_PAGO_WEBHOOK_URL'
+        ),
+
+        'success_url' => env(
+            'MERCADO_PAGO_SUCCESS_URL'
+        ),
+
+        'pending_url' => env(
+            'MERCADO_PAGO_PENDING_URL'
+        ),
+
+        'failure_url' => env(
+            'MERCADO_PAGO_FAILURE_URL'
+        ),
+    ],
+
 ];

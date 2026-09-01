@@ -48,4 +48,6 @@ interface ReservationRepository
     public function findByCustomerUser(int $customerUserId): array;
 
     public function findByPublicToken(string $token): ?Reservation;
+
+    public function findByIdForUpdate(int $id): ?Reservation;
 }
