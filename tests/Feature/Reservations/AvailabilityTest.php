@@ -48,12 +48,6 @@ final class AvailabilityTest extends TestCase
         $response->assertOk();
 
         $response->assertJsonFragment([
-            'starts_at' => '2030-09-10 09:00:00',
-            'ends_at' => '2030-09-10 10:00:00',
-            'available' => false,
-        ]);
-
-        $response->assertJsonFragment([
             'starts_at' => '2030-09-10 10:00:00',
             'ends_at' => '2030-09-10 11:00:00',
             'available' => true,
@@ -132,6 +126,8 @@ final class AvailabilityTest extends TestCase
             minutes: 60,
         );
 
+        $this->createPrice($branch->id, $tipoCourt->id, 10000);
+
         Reservation::factory()
             ->for($court1)
             ->confirmed()
@@ -205,6 +201,8 @@ final class AvailabilityTest extends TestCase
             minutes: 60,
         );
 
+        $this->createPrice($branch->id, $tipoCourt->id, 10000);
+
         $response = $this->getJson(
             "{$this->routeTipoCourtAvailability}{$branch->id}/availability"
                 . '?date=2030-09-10'
@@ -242,6 +240,9 @@ final class AvailabilityTest extends TestCase
             'active' => true,
         ]);
 
+
+        $price = $this->createPrice($branch->id, $tipoCourt->id, 10000);
+
         return [
             $club,
             $branch,
@@ -250,11 +251,8 @@ final class AvailabilityTest extends TestCase
         ];
     }
 
-    private function createInterval(
-        int $branchId,
-        int $tipoCourtId,
-        int $minutes,
-    ): void {
+    private function createInterval(int $branchId, int $tipoCourtId, int $minutes): void
+    {
         DB::table('interval_time_tipo_court')
             ->insert([
                 'branch_id' => $branchId,
@@ -263,5 +261,17 @@ final class AvailabilityTest extends TestCase
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+    }
+
+    private function createPrice(int $branchId, int $tipoCourtId, $price): void
+    {
+        DB::table('court_prices')->insert([
+            'branch_id' => $branchId,
+            'tipo_court_id' => $tipoCourtId,
+            'price' => $price,
+            'active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

@@ -145,6 +145,7 @@ final class EloquentReservationRepository implements ReservationRepository
             'status' => $reservation->getStatus()->value,
             'notes' => $reservation->getNotes(),
             'cancelled_at' => $reservation->getCancelledAt()?->format('Y-m-d H:i:s'),
+            'expires_at' => $reservation->getExpiresAt()?->format('Y-m-d H:i:s'),
         ]);
 
         return $this->toDomain($eloquentReservation->refresh());

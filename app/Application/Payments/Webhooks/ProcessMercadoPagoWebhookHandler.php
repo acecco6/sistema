@@ -81,6 +81,8 @@ final class ProcessMercadoPagoWebhookHandler
                 return;
             }
 
+            $payment->setProviderPaymentId($gatewayPayment->providerPaymentId);
+
             switch ($gatewayPayment->status) {
                 case 'approved':
                     $paidAt = $gatewayPayment->paidAt !== null
@@ -94,9 +96,7 @@ final class ProcessMercadoPagoWebhookHandler
 
                     $this->paymentRepository->update($payment);
 
-                    $this->tryConfirmReservation(
-                        $payment->getReservationId()
-                    );
+                    $this->tryConfirmReservation($payment->getReservationId());
 
                     break;
 

@@ -106,4 +106,9 @@ final class Payment
     {
         $this->status = PaymentStatus::REFUNDED;
     }
+
+    public function setProviderPaymentId(string $providerPaymentId): void
+    {
+        $this->providerPaymentId = $providerPaymentId;
+    }
 }
