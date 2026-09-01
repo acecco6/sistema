@@ -6,7 +6,12 @@ use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchCont
 use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
 use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
+use App\Http\Controllers\Payments\CompleteRefundController;
+use App\Http\Controllers\Payments\GetRefundController;
+use App\Http\Controllers\Payments\GetReservationPaymentsController;
+use App\Http\Controllers\Payments\ListRefundsController;
 use App\Http\Controllers\Payments\MercadoPagoWebhookController;
+use App\Http\Controllers\Payments\RegisterManualPaymentController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
 use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
@@ -175,5 +180,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', ShowReservationController::class)->name('reservation.view');
         Route::patch('/{id}/cancel', CancelReservationController::class)->name('reservation.cancel');
         Route::patch('/{id}/confirm', ConfirmReservationController::class)->name('reservation.confirm');
+        Route::post('{id}/payments', RegisterManualPaymentController::class)->name('payment.create');
+        Route::get('{id}/payments', GetReservationPaymentsController::class)->name('payment.view');
+    });
+
+
+    Route::prefix('refunds')->middleware('permission')->group(function () {
+        Route::get('/{id}', GetRefundController::class)->name('refund.view');
+        Route::patch('/{id}/complete', CompleteRefundController::class)->name('refund.complete');
+    });
+    Route::prefix('branches/{branch_id}/refunds')->middleware('permission')->group(function () {
+        Route::get('', ListRefundsController::class)->name('refund.collection');
     });
 });
