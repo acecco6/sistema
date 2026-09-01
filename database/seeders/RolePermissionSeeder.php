@@ -89,6 +89,7 @@ final class RolePermissionSeeder extends Seeder
                 'reservation.view',
                 'reservation.cancel',
                 'reservation.confirm',
+                'payment.create'
             ],
 
 
@@ -148,6 +149,7 @@ final class RolePermissionSeeder extends Seeder
                 'reservation.view',
                 'reservation.cancel',
                 'reservation.confirm',
+                'payment.create'
 
             ],
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController,
 use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
 use App\Http\Controllers\Payments\MercadoPagoWebhookController;
+use App\Http\Controllers\Payments\RegisterManualPaymentController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
 use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
@@ -175,5 +176,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', ShowReservationController::class)->name('reservation.view');
         Route::patch('/{id}/cancel', CancelReservationController::class)->name('reservation.cancel');
         Route::patch('/{id}/confirm', ConfirmReservationController::class)->name('reservation.confirm');
+        Route::post('{id}/payments', RegisterManualPaymentController::class)->name('payment.create');
     });
 });

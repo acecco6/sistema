@@ -92,6 +92,7 @@ final class CheckPermission
             'court_price' => $this->resolveCourtPriceScope($request),
             'court_promotion' => $this->resolveCourtPromotionScope($request),
             'reservation' => $this->resolveReservationScope($request),
+            'payment' => $this->resolvePaymentScope($request),
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
             ),
@@ -690,5 +691,58 @@ final class CheckPermission
         if ($membership === null) {
             throw new AuthorizationDeniedException();
         }
+    }
+
+
+    private function resolvePaymentScope(Request $request): array
+    {
+        /*
+    |--------------------------------------------------------------------------
+    | CREATE MANUAL PAYMENT
+    |--------------------------------------------------------------------------
+    |
+    | POST /reservations/{id}/payments
+    |
+    | El pago todavía no existe.
+    | El scope se obtiene desde la Reservation.
+    |
+    */
+
+        $reservationId = $request->route('id');
+
+        if ($reservationId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar la reserva para el pago.'
+            );
+        }
+
+        $reservation = $this->reservations->findById(
+            (int) $reservationId
+        );
+
+        if ($reservation === null) {
+            throw new ReservationNotFoundException();
+        }
+
+        $court = $this->courts->findById(
+            $reservation->getCourtId()
+        );
+
+        if ($court === null) {
+            throw new CourtNotFoundException();
+        }
+
+        $branch = $this->branches->findById(
+            $court->getBranchId()
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return [
+            'clubId' => $branch->getClubId(),
+            'branchId' => $branch->getId(),
+        ];
     }
 }
