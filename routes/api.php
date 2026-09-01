@@ -7,7 +7,9 @@ use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController,
 use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
 use App\Http\Controllers\Payments\CompleteRefundController;
+use App\Http\Controllers\Payments\GetRefundController;
 use App\Http\Controllers\Payments\GetReservationPaymentsController;
+use App\Http\Controllers\Payments\ListRefundsController;
 use App\Http\Controllers\Payments\MercadoPagoWebhookController;
 use App\Http\Controllers\Payments\RegisterManualPaymentController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
@@ -184,6 +186,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::prefix('refunds')->middleware('permission')->group(function () {
+        Route::get('/{id}', GetRefundController::class)->name('refund.view');
         Route::patch('/{id}/complete', CompleteRefundController::class)->name('refund.complete');
+    });
+    Route::prefix('branches/{branch_id}/refunds')->middleware('permission')->group(function () {
+        Route::get('', ListRefundsController::class)->name('refund.collection');
     });
 });

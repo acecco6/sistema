@@ -303,6 +303,11 @@ final class CheckPermission
 
             'reservation' => $this->authorizeReservationCollection($request, $userId),
 
+            'refund' => $this->authorizeRefundCollection(
+                request: $request,
+                userId: $userId,
+            ),
+
             default => throw new RuntimeException(
                 "No existe autorización de colección para [{$resource}]."
             ),
@@ -823,5 +828,37 @@ final class CheckPermission
             'clubId' => $branch->getClubId(),
             'branchId' => $branch->getId(),
         ];
+    }
+
+    private function authorizeRefundCollection(
+        Request $request,
+        int $userId
+    ): void {
+        $branchId = $request->route('branch_id');
+
+        if ($branchId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar la sucursal para listar devoluciones.'
+            );
+        }
+
+        $branch = $this->branches->findById(
+            (int) $branchId
+        );
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        $membership = $this->memberships
+            ->findActiveForScope(
+                userId: $userId,
+                clubId: $branch->getClubId(),
+                branchId: $branch->getId(),
+            );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Domain\Payments\Repositories;
 
 use App\Domain\Payments\Entities\PaymentRefund;
+use App\Domain\Payments\Enums\RefundStatus;
 
 interface PaymentRefundRepository
 {
@@ -42,4 +43,6 @@ interface PaymentRefundRepository
      * ya fue confirmada.
      */
     public function sumCompletedByReservation(int $reservationId): string;
+
+    public function findByBranch(int $branchId, ?RefundStatus $status = null,): array;
 }

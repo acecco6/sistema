@@ -31,6 +31,36 @@ final class EloquentPaymentRefundRepository implements PaymentRefundRepository
             : null;
     }
 
+    public function findByBranch(
+        int $branchId,
+        ?RefundStatus $status = null,
+    ): array {
+        $query = PaymentRefundModel::query()
+            ->whereHas(
+                'reservation.court',
+                fn($query) => $query->where(
+                    'branch_id',
+                    $branchId
+                )
+            )
+            ->orderBy('created_at');
+
+        if ($status !== null) {
+            $query->where(
+                'status',
+                $status->value
+            );
+        }
+
+        return $query
+            ->get()
+            ->map(
+                fn(PaymentRefundModel $model) =>
+                $this->toDomain($model)
+            )
+            ->all();
+    }
+
     public function findByReservation(int $reservationId): array
     {
         return PaymentRefundModel::query()
