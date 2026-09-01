@@ -41,7 +41,6 @@ class GetTipoCourtAvailabilityRequest extends FormRequest
                 'nullable',
                 'date_format:H:i:s',
                 'required_with:start_time',
-                'after:start_time',
             ],
             'duration_minutes' => [
                 'nullable',

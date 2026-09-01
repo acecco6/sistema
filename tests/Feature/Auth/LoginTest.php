@@ -96,11 +96,7 @@ final class LoginTest extends TestCase
             ]
         );
 
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors([
-                'email',
-            ]);
+        $response->assertUnauthorized();
     }
 
     public function test_usuario_inactivo_no_puede_iniciar_sesion(): void

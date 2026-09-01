@@ -40,7 +40,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"email\": \"user2@example.com\",\n    \"password\": \"sample_text\"\n}",
+                                    "raw": "{\n    \"email\": \"user13@example.com\",\n    \"password\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -79,7 +79,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user100@example.com\",\n    \"password\": \"sample_text\",\n    \"confirm_password\": \"sample_text\"\n}",
+                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user7@example.com\",\n    \"password\": \"sample_text\",\n    \"confirm_password\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -114,6 +114,45 @@
                                         "api",
                                         "auth",
                                         "logout"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "webhooks",
+            "item": [
+                {
+                    "name": "mercadopago",
+                    "item": [
+                        {
+                            "name": "[POST] api/webhooks/mercadopago",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/webhooks/mercadopago",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "webhooks",
+                                        "mercadopago"
                                     ]
                                 }
                             }
@@ -163,7 +202,7 @@
                                         },
                                         "body": {
                                             "mode": "raw",
-                                            "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user17@example.com\",\n    \"phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": \"sample_text\"\n}",
+                                            "raw": "{\n    \"name\": \"sample_text\",\n    \"email\": \"user100@example.com\",\n    \"phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": \"sample_text\"\n}",
                                             "options": []
                                         }
                                     }
@@ -205,7 +244,7 @@
                                         },
                                         "body": {
                                             "mode": "raw",
-                                            "raw": "{\n    \"date\": \"sample_text\",\n    \"duration_minutes\": 37\n}",
+                                            "raw": "{\n    \"date\": \"sample_text\",\n    \"duration_minutes\": 18\n}",
                                             "options": []
                                         }
                                     }
@@ -252,7 +291,7 @@
                                         },
                                         "body": {
                                             "mode": "raw",
-                                            "raw": "{\n    \"tipo_court_id\": 1,\n    \"date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"duration_minutes\": 49\n}",
+                                            "raw": "{\n    \"tipo_court_id\": 3,\n    \"date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"duration_minutes\": 14\n}",
                                             "options": []
                                         }
                                     }
@@ -493,7 +532,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"name\": \"sample_text\",\n    \"active\": 0\n}",
+                            "raw": "{\n    \"name\": \"sample_text\",\n    \"active\": 1\n}",
                             "options": []
                         }
                     }
@@ -765,7 +804,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"tipo_court_id\": 10,\n    \"name\": \"sample_text\"\n}",
+                                    "raw": "{\n    \"tipo_court_id\": 1,\n    \"name\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -837,7 +876,48 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"tipo_court_id\": 8,\n    \"price\": 90\n}",
+                                    "raw": "{\n    \"tipo_court_id\": 6,\n    \"price\": 69\n}",
+                                    "options": []
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "refunds",
+                    "item": [
+                        {
+                            "name": "[GET] api/branches/{branch_id}/refunds",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/branches/:branch_id/refunds",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "branches",
+                                        ":branch_id",
+                                        "refunds"
+                                    ],
+                                    "variable": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"status\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -877,7 +957,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"user_id\": 9,\n    \"club_id\": 7,\n    \"rol_id\": 6,\n    \"branch_id\": 3\n}",
+                            "raw": "{\n    \"user_id\": 9,\n    \"club_id\": 9,\n    \"rol_id\": 7,\n    \"branch_id\": 4\n}",
                             "options": []
                         }
                     }
@@ -993,7 +1073,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"branch_id\": 10\n}",
+                                    "raw": "{\n    \"branch_id\": 9\n}",
                                     "options": []
                                 }
                             }
@@ -1165,7 +1245,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"customer_user_id\": 2,\n    \"guest_name\": \"sample_text\",\n    \"guest_email\": \"user90@example.com\",\n    \"guest_phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": 0\n}",
+                                    "raw": "{\n    \"customer_user_id\": 8,\n    \"guest_name\": \"sample_text\",\n    \"guest_email\": \"user51@example.com\",\n    \"guest_phone\": \"sample_text\",\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\",\n    \"notes\": \"sample_text\",\n    \"confirmed\": 0\n}",
                                     "options": []
                                 }
                             }
@@ -1278,7 +1358,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"price\": 98\n}",
+                            "raw": "{\n    \"price\": 21\n}",
                             "options": []
                         }
                     }
@@ -1389,7 +1469,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 6,\n    \"day_of_week\": 7,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 7,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
+                                    "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 44,\n    \"day_of_week\": 7,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 4,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
                                     "options": []
                                 }
                             }
@@ -1461,7 +1541,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 15,\n    \"day_of_week\": 9,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 8,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
+                            "raw": "{\n    \"name\": \"sample_text\",\n    \"price\": 86,\n    \"day_of_week\": 4,\n    \"specific_date\": \"sample_text\",\n    \"start_time\": \"sample_text\",\n    \"end_time\": \"sample_text\",\n    \"priority\": 10,\n    \"starts_at\": \"sample_text\",\n    \"ends_at\": \"sample_text\"\n}",
                             "options": []
                         }
                     }
@@ -1500,7 +1580,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n    \"active\": 0\n}",
+                                    "raw": "{\n    \"active\": 1\n}",
                                     "options": []
                                 }
                             }
@@ -1680,6 +1760,11 @@
                                         "cancel"
                                     ],
                                     "variable": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"create_refund\": 1,\n    \"refund_reason\": \"sample_text\"\n}",
+                                    "options": []
                                 }
                             }
                         }
@@ -1716,6 +1801,154 @@
                                         "confirm"
                                     ],
                                     "variable": []
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "payments",
+                    "item": [
+                        {
+                            "name": "[POST] api/reservations/{id}/payments",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/reservations/:id/payments",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "reservations",
+                                        ":id",
+                                        "payments"
+                                    ],
+                                    "variable": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"amount\": 90,\n    \"method\": \"sample_text\"\n}",
+                                    "options": []
+                                }
+                            }
+                        },
+                        {
+                            "name": "[GET] api/reservations/{id}/payments",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/reservations/:id/payments",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "reservations",
+                                        ":id",
+                                        "payments"
+                                    ],
+                                    "variable": []
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "refunds",
+            "item": [
+                {
+                    "name": "[GET] api/refunds/{id}",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/refunds/:id",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "refunds",
+                                ":id"
+                            ],
+                            "variable": []
+                        }
+                    }
+                },
+                {
+                    "name": "complete",
+                    "item": [
+                        {
+                            "name": "[PATCH] api/refunds/{id}/complete",
+                            "request": {
+                                "method": "PATCH",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/refunds/:id/complete",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "refunds",
+                                        ":id",
+                                        "complete"
+                                    ],
+                                    "variable": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"method\": \"sample_text\",\n    \"notes\": \"sample_text\"\n}",
+                                    "options": []
                                 }
                             }
                         }

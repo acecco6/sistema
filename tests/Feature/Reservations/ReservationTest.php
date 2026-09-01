@@ -891,6 +891,138 @@ final class ReservationTest extends TestCase
             ]);
     }
 
+
+    public function test_guest_puede_reservar_cruzando_medianoche_si_la_sucursal_sigue_abierta(): void
+    {
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createCourtScenario();
+
+        $branch->update([
+            'opening_time' => '08:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        CourtPrice::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'price' => '25000.00',
+            'active' => true,
+        ]);
+
+        $response = $this->postJson(
+            "/api/public/courts/{$court->id}/book",
+            [
+                'name' => 'Juan Pérez',
+                'email' => 'juan@test.com',
+                'starts_at' => '2030-09-10 23:30:00',
+                'ends_at' => '2030-09-11 00:30:00',
+            ]
+        );
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('reservations', [
+            'court_id' => $court->id,
+            'starts_at' => '2030-09-10 23:30:00',
+            'ends_at' => '2030-09-11 00:30:00',
+        ]);
+    }
+
+    public function test_guest_puede_reservar_despues_de_medianoche_dentro_de_la_jornada_anterior(): void
+    {
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createCourtScenario();
+
+        $branch->update([
+            'opening_time' => '08:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        CourtPrice::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'price' => '25000.00',
+            'active' => true,
+        ]);
+
+        $response = $this->postJson(
+            "/api/public/courts/{$court->id}/book",
+            [
+                'name' => 'Juan Pérez',
+                'email' => 'juan@test.com',
+                'starts_at' => '2030-09-11 00:30:00',
+                'ends_at' => '2030-09-11 01:30:00',
+            ]
+        );
+
+        $response->assertCreated();
+    }
+
+    public function test_no_se_puede_reservar_mas_alla_del_cierre_nocturno(): void
+    {
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createCourtScenario();
+
+        $branch->update([
+            'opening_time' => '08:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        CourtPrice::factory()->createOne([
+            'branch_id' => $branch->id,
+            'tipo_court_id' => $tipoCourt->id,
+            'price' => '25000.00',
+            'active' => true,
+        ]);
+
+        $response = $this->postJson(
+            "/api/public/courts/{$court->id}/book",
+            [
+                'name' => 'Juan Pérez',
+                'email' => 'juan@test.com',
+                'starts_at' => '2030-09-11 01:30:00',
+                'ends_at' => '2030-09-11 02:30:00',
+            ]
+        );
+
+        $response->assertUnprocessable();
+
+        $this->assertDatabaseMissing('reservations', [
+            'court_id' => $court->id,
+            'starts_at' => '2030-09-11 01:30:00',
+        ]);
+    }
+
     private function createCourtScenario(): array
     {
         /** @var Club $club */

@@ -8,6 +8,7 @@ use App\Models\Court;
 use App\Models\Reservation;
 use App\Models\TipoCourt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -218,6 +219,262 @@ final class AvailabilityTest extends TestCase
         $response->assertJsonMissing([
             'court_id' => $inactiveCourt->id,
         ]);
+    }
+
+
+    public function test_start_time_no_desalinea_la_grilla(): void
+    {
+        Carbon::setTestNow('2030-09-10 12:00:00');
+
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        $response = $this->getJson(
+            "{$this->routeTipoCourtAvailability}{$branch->id}/availability"
+                . '?date=2030-09-10'
+                . "&tipo_court_id={$tipoCourt->id}"
+                . '&duration_minutes=60'
+                . '&start_time=18:05:00'
+                . '&end_time=20:00:00'
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonMissing([
+            'starts_at' => '2030-09-10 18:05:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 18:30:00',
+            'ends_at' => '2030-09-10 19:30:00',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_disponibilidad_de_hoy_no_muestra_horarios_pasados(): void
+    {
+        Carbon::setTestNow('2030-09-10 18:24:00');
+
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        $response = $this->getJson(
+            "{$this->routeTipoCourtAvailability}{$branch->id}/availability"
+                . '?date=2030-09-10'
+                . "&tipo_court_id={$tipoCourt->id}"
+                . '&duration_minutes=60'
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonMissing([
+            'starts_at' => '2030-09-10 18:00:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 18:30:00',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_disponibilidad_de_court_hoy_no_muestra_horarios_pasados(): void
+    {
+        Carbon::setTestNow('2030-09-10 18:24:00');
+
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        $response = $this->getJson(
+            "{$this->routeCourtAvailability}{$court->id}/availability"
+                . '?date=2030-09-10'
+                . '&duration_minutes=60'
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonMissing([
+            'starts_at' => '2030-09-10 18:00:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 18:30:00',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_court_genera_disponibilidad_despues_de_medianoche(): void
+    {
+        Carbon::setTestNow('2030-09-10 12:00:00');
+
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $branch->update([
+            'opening_time' => '08:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        $response = $this->getJson(
+            "{$this->routeCourtAvailability}{$court->id}/availability"
+                . '?date=2030-09-10'
+                . '&duration_minutes=60'
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 23:30:00',
+            'ends_at' => '2030-09-11 00:30:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-11 01:00:00',
+            'ends_at' => '2030-09-11 02:00:00',
+        ]);
+
+        $response->assertJsonMissing([
+            'starts_at' => '2030-09-11 01:30:00',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_tipo_court_soporta_filtro_que_cruza_medianoche(): void
+    {
+        Carbon::setTestNow('2030-09-10 12:00:00');
+
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $branch->update([
+            'opening_time' => '08:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        $response = $this->getJson(
+            "{$this->routeTipoCourtAvailability}{$branch->id}/availability"
+                . '?date=2030-09-10'
+                . "&tipo_court_id={$tipoCourt->id}"
+                . '&duration_minutes=60'
+                . '&start_time=23:05:00'
+                . '&end_time=01:30:00'
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonMissing([
+            'starts_at' => '2030-09-10 23:05:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-10 23:30:00',
+            'ends_at' => '2030-09-11 00:30:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-11 00:30:00',
+            'ends_at' => '2030-09-11 01:30:00',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_jornada_nocturna_despues_de_medianoche_solo_muestra_horarios_futuros(): void
+    {
+        Carbon::setTestNow('2030-09-11 00:24:00');
+
+        [
+            $club,
+            $branch,
+            $court,
+            $tipoCourt,
+        ] = $this->createScenario();
+
+        $branch->update([
+            'opening_time' => '08:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $this->createInterval(
+            branchId: $branch->id,
+            tipoCourtId: $tipoCourt->id,
+            minutes: 30,
+        );
+
+        /*
+         * La jornada consultada comenzó el 10 y termina el 11 a las 02:00.
+         */
+        $response = $this->getJson(
+            "{$this->routeCourtAvailability}{$court->id}/availability"
+                . '?date=2030-09-10'
+                . '&duration_minutes=60'
+        );
+
+        $response->assertOk();
+
+        $response->assertJsonMissing([
+            'starts_at' => '2030-09-11 00:00:00',
+        ]);
+
+        $response->assertJsonFragment([
+            'starts_at' => '2030-09-11 00:30:00',
+            'ends_at' => '2030-09-11 01:30:00',
+        ]);
+
+        Carbon::setTestNow();
     }
 
     private function createScenario(): array
