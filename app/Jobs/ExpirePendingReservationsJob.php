@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Domain\Reservations\Events\ReservationExpired;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,7 +20,11 @@ class ExpirePendingReservationsJob implements ShouldQueue
         foreach ($expiredReservations as $reservation) {
             $reservation->expire();
 
-            $reservations->update($reservation);
+            $updated = $reservations->update($reservation);
+
+            ReservationExpired::dispatch(
+                $updated->getId()
+            );
         }
     }
 }

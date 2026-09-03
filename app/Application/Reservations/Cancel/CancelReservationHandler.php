@@ -7,6 +7,7 @@ use App\Domain\Payments\Entities\PaymentRefund;
 use App\Domain\Payments\Enums\RefundStatus;
 use App\Domain\Payments\Repositories\PaymentRefundRepository;
 use App\Domain\Payments\Repositories\PaymentRepository;
+use App\Domain\Reservations\Events\ReservationCancelled;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,10 @@ final class CancelReservationHandler
 
             $updated = $this->reservations->update(
                 $reservation
+            );
+
+            ReservationCancelled::dispatch(
+                $updated->getId()
             );
 
             return ReservationDto::fromDomain(

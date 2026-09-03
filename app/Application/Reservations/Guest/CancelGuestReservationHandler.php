@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\Guest;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Domain\Reservations\Events\ReservationCancelled;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 
@@ -24,6 +25,10 @@ final class CancelGuestReservationHandler
         $reservation->cancelByCustomer($command->cancelledAt ?? now()->toDateTimeImmutable());
 
         $updated = $this->reservations->update($reservation);
+
+        ReservationCancelled::dispatch(
+            $updated->getId()
+        );
 
         return ReservationDto::fromDomain($updated);
     }

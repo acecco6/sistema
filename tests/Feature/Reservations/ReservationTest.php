@@ -55,6 +55,8 @@ final class ReservationTest extends TestCase
             ->postJson(
                 "/api/courts/{$court->id}/reservations",
                 [
+                    'guest_name' => $customer->name,
+                    'guest_email' => $customer->email,
                     'customer_user_id' => $customer->id,
                     'starts_at' => '2030-09-10 14:00:00',
                     'ends_at' => '2030-09-10 15:00:00',
