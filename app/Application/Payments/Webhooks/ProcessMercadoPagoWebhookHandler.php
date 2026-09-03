@@ -6,6 +6,7 @@ use App\Application\Payments\Gateways\PaymentGateway;
 use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Payments\Repositories\PaymentRepository;
 use App\Domain\Payments\Services\ReservationPaymentPolicy;
+use App\Domain\Reservations\Events\ReservationConfirmed;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
@@ -156,6 +157,10 @@ final class ProcessMercadoPagoWebhookHandler
             return;
         }
 
-        $this->reservationRepository->update($reservation);
+        $updated = $this->reservationRepository->update($reservation);
+
+        ReservationConfirmed::dispatch(
+            $updated->getId()
+        );
     }
 }

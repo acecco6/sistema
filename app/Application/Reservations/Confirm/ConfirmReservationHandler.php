@@ -5,6 +5,7 @@ namespace App\Application\Reservations\Confirm;
 use App\Application\Reservations\DTOs\ReservationDto;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
+use App\Domain\Reservations\Events\ReservationConfirmed;
 
 final class ConfirmReservationHandler
 {
@@ -27,6 +28,10 @@ final class ConfirmReservationHandler
 
         $updated = $this->reservations->update(
             $reservation
+        );
+
+        ReservationConfirmed::dispatch(
+            $updated->getId()
         );
 
         return ReservationDto::fromDomain(
