@@ -13,6 +13,8 @@ use App\Models\Reservation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
+use App\Domain\Reservations\Events\ReservationConfirmed;
+use Illuminate\Support\Facades\Event;
 
 final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 {
@@ -26,6 +28,11 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
          * La seña requerida es 50%:
          * $20.000.
          */
+
+        Event::fake([
+            ReservationConfirmed::class,
+        ]);
+
         $reservation = Reservation::factory()
             ->pending()
             ->withTotalPrice('40000.00')
@@ -109,11 +116,25 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         $this->assertNotNull(
             $payment->paid_at
         );
+
+        Event::assertDispatched(
+            ReservationConfirmed::class,
+            function (ReservationConfirmed $event) use ($reservation) {
+                return $event->reservationId === $reservation->id;
+            }
+        );
+
+        Event::assertDispatchedTimes(ReservationConfirmed::class, 1);
     }
 
 
     public function test_procesar_dos_veces_el_mismo_pago_es_idempotente(): void
     {
+
+        Event::fake([
+            ReservationConfirmed::class,
+        ]);
+
         $reservation = Reservation::factory()
             ->pending()
             ->withTotalPrice('40000.00')
@@ -162,6 +183,15 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         $handler->handle($command);
         $handler->handle($command);
 
+        Event::assertDispatched(
+            ReservationConfirmed::class,
+            function (ReservationConfirmed $event) use ($reservation) {
+                return $event->reservationId === $reservation->id;
+            }
+        );
+
+        Event::assertDispatchedTimes(ReservationConfirmed::class, 1);
+
         $payment->refresh();
         $reservation->refresh();
 
@@ -198,6 +228,11 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
     public function test_pago_aprobado_despues_de_expirar_no_confirma_la_reserva(): void
     {
+
+        Event::fake([
+            ReservationConfirmed::class,
+        ]);
+
         $reservation = Reservation::factory()
             ->pending()
             ->withTotalPrice('40000.00')
@@ -277,6 +312,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         $this->assertNotNull(
             $reservation->expires_at
         );
+
+        Event::assertNotDispatched(ReservationConfirmed::class);
     }
 
     public function test_pago_con_monto_incorrecto_no_confirma_la_reserva(): void

@@ -6,9 +6,11 @@ final readonly class ReservationPaymentsDto
 {
     /**
      * @param PaymentDto[] $payments
+     * @param PaymentRefundDto[] $paymentRefunds
      */
     public function __construct(
         public array $payments,
+        public array $paymentRefunds,
         public ReservationPaymentSummary $paymentSummary,
     ) {}
 
@@ -19,7 +21,10 @@ final readonly class ReservationPaymentsDto
                 static fn(PaymentDto $payment): array => $payment->toArray(),
                 $this->payments,
             ),
-
+            'payment_refunds' => array_map(
+                static fn(PaymentRefundDto $paymentRefund): array => $paymentRefund->toArray(),
+                $this->paymentRefunds,
+            ),
             'payment_summary' => $this->paymentSummary->toArray(),
         ];
     }

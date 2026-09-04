@@ -40,13 +40,13 @@ class CreateReservationRequest extends FormRequest
              * ya valida que exista cliente registrado O guest.
              */
             'guest_name' => [
-                'nullable',
+                'required_without:customer_user_id',
                 'string',
-                'max:100',
+                'max:100'
             ],
 
             'guest_email' => [
-                'nullable',
+                'required_without:customer_user_id',
                 'email',
                 'max:150',
             ],

@@ -15,6 +15,7 @@ use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Reservations\Entities\Reservation;
 use App\Domain\Reservations\Entities\ReservationPriceSegment;
 use App\Domain\Reservations\Enums\ReservationStatus;
+use App\Domain\Reservations\Events\ReservationConfirmed;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
@@ -214,6 +215,12 @@ final class CreateReservationHandler
                 | y recién ahí se libera el lock de la Court.
                 |
                 */
+
+                if ($savedReservation->getStatus() === ReservationStatus::CONFIRMED) {
+                    ReservationConfirmed::dispatch(
+                        $savedReservation->getId()
+                    );
+                }
 
                 return ReservationDto::fromDomain($savedReservation);
             },

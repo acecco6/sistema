@@ -12,9 +12,6 @@ interface PaymentRepository
 
     public function findByProviderPaymentId(string $providerPaymentId): ?Payment;
 
-    /**
-     * @return Payment[]
-     */
     public function findByReservation(int $reservationId): array;
 
     public function save(Payment $payment): Payment;

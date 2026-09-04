@@ -14,7 +14,11 @@ final class CreateReservationController extends Controller
     public function __invoke(int $court_id, CreateReservationRequest $request, CreateReservationHandler $handler,): JsonResponse
     {
         $validated = $request->validated();
-
+        if ($validated['customer_user_id'] !== null) {
+            $validated['guest_name'] = null;
+            $validated['guest_email'] = null;
+            $validated['guest_phone'] = null;
+        }
         $result = $handler->handle(
             new CreateReservationCommand(
                 courtId: $court_id,
