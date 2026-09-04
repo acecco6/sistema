@@ -40,6 +40,37 @@ final class EloquentReservationRepository implements ReservationRepository
             ->all();
     }
 
+    public function findByCourtAndDate(int $courtId, string $date): array
+    {
+        return EloquentReservation::query()
+            ->where('court_id', $courtId)
+            ->whereDate('starts_at', $date)
+            ->orderBy('starts_at')
+            ->get()
+            ->map(
+                fn(EloquentReservation $reservation) =>
+                $this->toDomain($reservation)
+            )
+            ->all();
+    }
+
+    public function findByBranchAndDate(int $branchId, string $date): array
+    {
+        return EloquentReservation::query()
+            ->whereHas('court', function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->whereDate('starts_at', $date)
+            ->orderBy('starts_at')
+            ->get()
+            ->map(
+                fn(EloquentReservation $reservation) =>
+                $this->toDomain($reservation)
+            )
+            ->all();
+    }
+
+
     public function hasOverlap(int $courtId, DateTimeImmutable $startsAt, DateTimeImmutable $endsAt, ?int $excludeReservationId = null): bool
     {
         return EloquentReservation::query()

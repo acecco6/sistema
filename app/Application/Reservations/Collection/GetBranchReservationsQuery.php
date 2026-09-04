@@ -2,10 +2,10 @@
 
 namespace App\Application\Reservations\Collection;
 
-final readonly class GetCourtReservationsQuery
+final readonly class GetBranchReservationsQuery
 {
     public function __construct(
-        public int $courtId,
+        public int $branchId,
         public string $date,
     ) {}
 }
