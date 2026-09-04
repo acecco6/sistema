@@ -124,6 +124,7 @@ final class EloquentPaymentRepository implements PaymentRepository
             : null;
     }
 
+
     private function toDomain(PaymentModel $model): PaymentEntity
     {
         return new PaymentEntity(

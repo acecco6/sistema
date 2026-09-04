@@ -45,4 +45,9 @@ interface PaymentRefundRepository
     public function sumCompletedByReservation(int $reservationId): string;
 
     public function findByBranch(int $branchId, ?RefundStatus $status = null,): array;
+
+    /**
+     * @return PaymentRefund[]
+     */
+    public function getRefundsByReservationId(int $reservationId): array;
 }

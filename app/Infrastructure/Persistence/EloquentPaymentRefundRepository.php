@@ -169,6 +169,25 @@ final class EloquentPaymentRefundRepository implements PaymentRefundRepository
         );
     }
 
+
+    public function getRefundsByReservationId(int $reservationId): array
+    {
+        return PaymentRefundModel::query()
+            ->where('reservation_id', $reservationId)
+            ->whereIn('status', [
+                RefundStatus::COMPLETED->value,
+                RefundStatus::PENDING->value,
+                RefundStatus::CANCELLED->value,
+            ])
+            ->orderBy('created_at')
+            ->get()
+            ->map(
+                fn(PaymentRefundModel $model): PaymentRefund =>
+                $this->toDomain($model)
+            )
+            ->all();
+    }
+
     private function toDomain(PaymentRefundModel $model): PaymentRefund
     {
         return new PaymentRefund(
