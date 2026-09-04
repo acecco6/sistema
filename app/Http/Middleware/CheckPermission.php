@@ -659,29 +659,43 @@ final class CheckPermission
         * GET /courts/{court_id}/reservations
         */
 
-        $courtId = $request->route('court_id');
+        /*
+        * GET /branches/{branch_id}/reservations
+        */
+        if ($request->route('branch_id') !== null) {
 
-        if ($courtId === null) {
-            throw new \RuntimeException(
-                'No se pudo determinar la cancha.'
+            $branchId = $request->route('branch_id');
+            $branch = $this->branches->findById((int) $branchId);
+
+            if ($branch === null) {
+                throw new BranchNotFoundException();
+            }
+        } else {
+            $courtId = $request->route('court_id');
+
+            if ($courtId === null) {
+                throw new RuntimeException(
+                    'No se pudo determinar la cancha.'
+                );
+            }
+
+            $court = $this->courts->findById(
+                (int) $courtId
             );
+
+            if ($court === null) {
+                throw new CourtNotFoundException();
+            }
+
+            $branch = $this->branches->findById(
+                $court->getBranchId()
+            );
+
+            if ($branch === null) {
+                throw new BranchNotFoundException();
+            }
         }
 
-        $court = $this->courts->findById(
-            (int) $courtId
-        );
-
-        if ($court === null) {
-            throw new CourtNotFoundException();
-        }
-
-        $branch = $this->branches->findById(
-            $court->getBranchId()
-        );
-
-        if ($branch === null) {
-            throw new BranchNotFoundException();
-        }
 
         /*
         * Collection no busca reservation.collection

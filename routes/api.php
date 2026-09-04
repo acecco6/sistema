@@ -16,6 +16,7 @@ use App\Http\Controllers\Payments\RegisterManualPaymentController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
 use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
+use App\Http\Controllers\Reservations\GetBranchReservationsController;
 use App\Http\Controllers\Reservations\GetCustomerReservationsController;
 use App\Http\Controllers\Reservations\ShowCustomerReservationController;
 use App\Http\Controllers\Reservations\ShowGuestReservationController;
@@ -144,6 +145,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('courts/{court_id}/reservations')->middleware('permission')->group(function () {
         Route::get('', GetCourtReservationsController::class)->name('reservation.collection');
         Route::post('', CreateReservationController::class)->name('reservation.create');
+    });
+
+
+    // Rutas de Reservas por Sucursal (Lectura)
+    Route::prefix('branches/{branch_id}/reservations')->middleware('permission')->group(function () {
+        Route::get('', GetBranchReservationsController::class)->name('reservation.branch.collection');
     });
 
 

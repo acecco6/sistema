@@ -13,7 +13,8 @@ final class GetCourtReservationsHandler
 
     public function handle(GetCourtReservationsQuery $query): array
     {
-        $reservations = $this->reservations->findByCourt($query->courtId);
+
+        $reservations = $this->reservations->findByCourtAndDate($query->courtId, $query->date);
 
         return array_map(ReservationDto::fromDomain(...), $reservations);
     }

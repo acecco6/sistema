@@ -15,6 +15,10 @@ interface ReservationRepository
      */
     public function findByCourt(int $courtId): array;
 
+    public function findByCourtAndDate(int $courtId, string $date): array;
+
+    public function findByBranchAndDate(int $branchId, string $date): array;
+
     /**
      * Devuelve true si existe una reserva que bloquea
      * el período solicitado.
