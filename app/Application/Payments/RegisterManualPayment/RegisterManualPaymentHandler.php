@@ -57,14 +57,20 @@ final class RegisterManualPaymentHandler
             }
 
             /*
-             * Calculamos cuánto dinero ya fue aprobado.
-             */
-            $approvedAmount = $this->paymentRepository->sumApprovedByReservation($reservation->getId());
+            * Calculamos el estado financiero real de la reserva.
+            *
+            * Esto tiene en cuenta:
+            * - pagos APPROVED
+            * - refunds COMPLETED
+            * - net_paid_amount
+            * - remaining_amount
+            */
 
-            /*
-             * Saldo actual.
-             */
-            $remainingAmount = bcsub($reservation->getTotalPrice(), $approvedAmount, 2);
+            $summary = $this->paymentSummaryService->calculate(
+                $reservation
+            );
+
+            $remainingAmount = $summary->remainingAmount;
 
             /*
              * Si por algún motivo ya existe sobrepago,
