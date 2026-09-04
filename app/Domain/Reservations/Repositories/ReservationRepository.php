@@ -42,6 +42,8 @@ interface ReservationRepository
      */
     public function findExpiredPending(): array;
 
+    public function findFinishedConfirmed(): array;
+
     /**
      * @return Reservation[]
      */

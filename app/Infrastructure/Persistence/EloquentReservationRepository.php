@@ -176,26 +176,7 @@ final class EloquentReservationRepository implements ReservationRepository
             ->all();
     }
 
-    private function toDomain(EloquentReservation $reservation): DomainReservation
-    {
-        return new DomainReservation(
-            id: $reservation->id,
-            courtId: $reservation->court_id,
-            customerUserId: $reservation->customer_user_id,
-            createdByUserId: $reservation->created_by_user_id,
-            guestName: $reservation->guest_name,
-            guestEmail: $reservation->guest_email,
-            guestPhone: $reservation->guest_phone,
-            startsAt: new DateTimeImmutable($reservation->starts_at->format('Y-m-d H:i:s')),
-            endsAt: new DateTimeImmutable($reservation->ends_at->format('Y-m-d H:i:s')),
-            totalPrice: $reservation->total_price,
-            status: $reservation->status,
-            publicToken: $reservation->public_token,
-            notes: $reservation->notes,
-            cancelledAt: $reservation->cancelled_at ? new DateTimeImmutable($reservation->cancelled_at->format('Y-m-d H:i:s')) : null,
-            expiresAt: $reservation->expires_at ? new DateTimeImmutable($reservation->expires_at->format('Y-m-d H:i:s')) : null,
-        );
-    }
+
 
     public function findBlockingReservationsBetween(int $courtId, DateTimeImmutable $startsAt, DateTimeImmutable $endsAt): array
     {
@@ -221,6 +202,17 @@ final class EloquentReservationRepository implements ReservationRepository
                 fn(EloquentReservation $model) =>
                 $this->toDomain($model)
             )
+            ->all();
+    }
+
+
+    public function findFinishedConfirmed(): array
+    {
+        return EloquentReservation::query()
+            ->where('status', ReservationStatus::CONFIRMED->value)
+            ->where('ends_at', '<=', now())
+            ->get()
+            ->map(fn(EloquentReservation $model) => $this->toDomain($model))
             ->all();
     }
 
@@ -261,6 +253,28 @@ final class EloquentReservationRepository implements ReservationRepository
             subtotal: $segment->subtotal,
             courtPriceRuleId: $segment->court_price_rule_id,
             ruleName: $segment->rule_name,
+        );
+    }
+
+
+    private function toDomain(EloquentReservation $reservation): DomainReservation
+    {
+        return new DomainReservation(
+            id: $reservation->id,
+            courtId: $reservation->court_id,
+            customerUserId: $reservation->customer_user_id,
+            createdByUserId: $reservation->created_by_user_id,
+            guestName: $reservation->guest_name,
+            guestEmail: $reservation->guest_email,
+            guestPhone: $reservation->guest_phone,
+            startsAt: new DateTimeImmutable($reservation->starts_at->format('Y-m-d H:i:s')),
+            endsAt: new DateTimeImmutable($reservation->ends_at->format('Y-m-d H:i:s')),
+            totalPrice: $reservation->total_price,
+            status: $reservation->status,
+            publicToken: $reservation->public_token,
+            notes: $reservation->notes,
+            cancelledAt: $reservation->cancelled_at ? new DateTimeImmutable($reservation->cancelled_at->format('Y-m-d H:i:s')) : null,
+            expiresAt: $reservation->expires_at ? new DateTimeImmutable($reservation->expires_at->format('Y-m-d H:i:s')) : null,
         );
     }
 }
