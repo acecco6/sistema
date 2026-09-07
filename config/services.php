@@ -37,33 +37,19 @@ return [
 
 
     'mercadopago' => [
-        'access_token' => env(
-            'MERCADO_PAGO_ACCESS_TOKEN'
-        ),
+        'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
+        'public_key' => env('MERCADO_PAGO_PUBLIC_KEY'),
 
-        'public_key' => env(
-            'MERCADO_PAGO_PUBLIC_KEY'
-        ),
+        'client_id' => env('MERCADO_PAGO_CLIENT_ID'),
+        'client_secret' => env('MERCADO_PAGO_CLIENT_SECRET'),
+        'redirect_uri' => env('MERCADO_PAGO_REDIRECT_URI'),
 
-        'webhook_secret' => env(
-            'MERCADO_PAGO_WEBHOOK_SECRET'
-        ),
+        'webhook_secret' => env('MERCADO_PAGO_WEBHOOK_SECRET'),
+        'webhook_url' => env('MERCADO_PAGO_WEBHOOK_URL'),
 
-        'webhook_url' => env(
-            'MERCADO_PAGO_WEBHOOK_URL'
-        ),
-
-        'success_url' => env(
-            'MERCADO_PAGO_SUCCESS_URL'
-        ),
-
-        'pending_url' => env(
-            'MERCADO_PAGO_PENDING_URL'
-        ),
-
-        'failure_url' => env(
-            'MERCADO_PAGO_FAILURE_URL'
-        ),
+        'success_url' => env('MERCADO_PAGO_SUCCESS_URL'),
+        'pending_url' => env('MERCADO_PAGO_PENDING_URL'),
+        'failure_url' => env('MERCADO_PAGO_FAILURE_URL'),
     ],
 
 ];

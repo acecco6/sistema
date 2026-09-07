@@ -16,6 +16,8 @@ use App\Domain\Courts\Repositories\IntervalTimeTipoCourtRepository;
 use App\Domain\Memberships\Repositories\MembershipRepository;
 use App\Domain\Notifications\Repositories\EmailLogRepository;
 use App\Domain\Payments\Events\RefundCompleted;
+use App\Domain\Payments\MercadoPagoAccounts\Repositories\MercadoPagoAccountRepository;
+use App\Domain\Payments\MercadoPagoAccounts\Services\MercadoPagoOAuthClient;
 use App\Domain\Payments\Repositories\PaymentRefundRepository;
 use App\Domain\Payments\Repositories\PaymentRepository;
 use App\Domain\Permissions\Repositories\PermissionRepository;
@@ -29,10 +31,12 @@ use App\Domain\Users\Repositories\UserRepository;
 use App\Infrastructure\Auth\LaravelPasswordHasher;
 use App\Infrastructure\Auth\Sanctum\SanctumTokenGenerator;
 use App\Infrastructure\Payments\Gateways\MercadoPagoPaymentGateway;
+use App\Infrastructure\Payments\MercadoPago\MercadoPagoOAuthHttpClient;
 use App\Infrastructure\Payments\Webhooks\MercadoPagoWebhookSignatureValidator;
 use App\Infrastructure\Persistence\{EloquentBranchRepository, EloquentClubRepository, EloquentCourtPriceRepository, EloquentCourtRepository, EloquentMembershipRepository, EloquentPermissionRepository, EloquentReservationRepository, EloquentRoleRepository, EloquentTipoCourtRepository, EloquentUserRepository};
 use App\Infrastructure\Persistence\EloquentEmailLogRepository;
 use App\Infrastructure\Persistence\EloquentIntervalTimeTipoCourtRepository;
+use App\Infrastructure\Persistence\EloquentMercadoPagoAccountRepository;
 use App\Infrastructure\Persistence\EloquentPaymentRefundRepository;
 use App\Infrastructure\Persistence\EloquentPaymentRepository;
 use Illuminate\Support\Facades\Event;
@@ -68,6 +72,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(WebhookSignatureValidator::class, MercadoPagoWebhookSignatureValidator::class);
         $this->app->bind(PaymentRefundRepository::class, EloquentPaymentRefundRepository::class,);
         $this->app->bind(EmailLogRepository::class, EloquentEmailLogRepository::class);
+        $this->app->bind(MercadoPagoAccountRepository::class, EloquentMercadoPagoAccountRepository::class,);
+        $this->app->bind(MercadoPagoOAuthClient::class, MercadoPagoOAuthHttpClient::class);
     }
 
     /**
