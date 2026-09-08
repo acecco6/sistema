@@ -26,7 +26,9 @@ final class Reservation extends Model
         'public_token',
         'notes',
         'cancelled_at',
-        'expires_at'
+        'expires_at',
+        'fixed_reservation_slot_id',
+        'recurrence_date',
     ];
 
     protected function casts(): array
@@ -38,6 +40,7 @@ final class Reservation extends Model
             'expires_at' => 'datetime',
             'total_price' => 'decimal:2',
             'status' => ReservationStatus::class,
+            'recurrence_date' => 'date',
         ];
     }
 
@@ -66,6 +69,14 @@ final class Reservation extends Model
     {
         return $this->hasMany(
             ReservationPriceSegment::class
+        );
+    }
+
+    public function fixedReservationSlot(): BelongsTo
+    {
+        return $this->belongsTo(
+            FixedReservationSlot::class,
+            'fixed_reservation_slot_id'
         );
     }
 }
