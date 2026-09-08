@@ -149,6 +149,8 @@ final class EloquentReservationRepository implements ReservationRepository
             'notes' => $reservation->getNotes(),
             'cancelled_at' => $reservation->getCancelledAt()?->format('Y-m-d H:i:s'),
             'expires_at' => $reservation->getExpiresAt()?->format('Y-m-d H:i:s'),
+            'fixed_reservation_slot_id' => $reservation->getFixedReservationSlotId(),
+            'recurrence_date' => $reservation->getRecurrenceDate()?->format('Y-m-d'),
         ]);
 
         return $this->toDomain($eloquentReservation);
@@ -177,6 +179,8 @@ final class EloquentReservationRepository implements ReservationRepository
             'notes' => $reservation->getNotes(),
             'cancelled_at' => $reservation->getCancelledAt()?->format('Y-m-d H:i:s'),
             'expires_at' => $reservation->getExpiresAt()?->format('Y-m-d H:i:s'),
+            'fixed_reservation_slot_id' => $reservation->getFixedReservationSlotId(),
+            'recurrence_date' => $reservation->getRecurrenceDate()?->format('Y-m-d'),
         ]);
 
         return $this->toDomain($eloquentReservation->refresh());
@@ -272,6 +276,43 @@ final class EloquentReservationRepository implements ReservationRepository
             : null;
     }
 
+    public function existsFixedOccurrence(int $fixedReservationSlotId, DateTimeImmutable $recurrenceDate): bool
+    {
+        return EloquentReservation::query()
+            ->where('fixed_reservation_slot_id', $fixedReservationSlotId)
+            ->whereDate('recurrence_date', $recurrenceDate->format('Y-m-d'))
+            ->exists();
+    }
+
+    public function findFutureByFixedReservation(
+        int $fixedReservationId,
+        DateTimeImmutable $from
+    ): array {
+        return EloquentReservation::query()
+            ->whereHas(
+                'fixedReservationSlot.fixedReservation',
+                function ($query) use ($fixedReservationId) {
+                    $query->where(
+                        'id',
+                        $fixedReservationId
+                    );
+                }
+            )
+            ->where(
+                'starts_at',
+                '>=',
+                $from->format('Y-m-d H:i:s')
+            )
+            ->orderBy('starts_at')
+            ->get()
+            ->map(
+                fn(EloquentReservation $model) =>
+                $this->toDomain($model)
+            )
+            ->all();
+    }
+
+
 
     private function toDomainSegment(EloquentReservationPriceSegment $segment): DomainReservationPriceSegment
     {
@@ -306,6 +347,15 @@ final class EloquentReservationRepository implements ReservationRepository
             notes: $reservation->notes,
             cancelledAt: $reservation->cancelled_at ? new DateTimeImmutable($reservation->cancelled_at->format('Y-m-d H:i:s')) : null,
             expiresAt: $reservation->expires_at ? new DateTimeImmutable($reservation->expires_at->format('Y-m-d H:i:s')) : null,
+            fixedReservationSlotId: $reservation->fixed_reservation_slot_id !== null
+                ? (int) $reservation->fixed_reservation_slot_id
+                : null,
+
+            recurrenceDate: $reservation->recurrence_date !== null
+                ? new DateTimeImmutable(
+                    $reservation->recurrence_date->format('Y-m-d')
+                )
+                : null,
         );
     }
 }

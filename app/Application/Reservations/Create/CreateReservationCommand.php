@@ -26,5 +26,8 @@ final readonly class CreateReservationCommand
          * según quién crea la reserva.
          */
         public bool $confirmed = false,
+
+        public ?int $fixedReservationSlotId = null,
+        public ?DateTimeImmutable $recurrenceDate = null,
     ) {}
 }

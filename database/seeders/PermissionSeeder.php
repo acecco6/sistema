@@ -47,6 +47,10 @@ final class PermissionSeeder extends Seeder
             ['name' => 'reservation.confirm', 'description' => 'Confirmar reservas'],
             ['name' => 'reservation.refund.create', 'description' => 'Crear devoluciones de reservas'],
 
+            ['name' => 'fixed_reservation.view', 'description' => 'Ver reservas fijas'],
+            ['name' => 'fixed_reservation.create', 'description' => 'Crear reservas fijas'],
+            ['name' => 'fixed_reservation.deactivate', 'description' => 'Desactivar reservas fijas'],
+            ['name' => 'fixed_reservation_conflict.resolve', 'description' => 'Resolver conflictos de reservas fijas'],
 
             ['name' => 'payment.create', 'description' => 'Registrar pagos manuales'],
             ['name' => 'payment.view', 'description' => 'Ver pagos de reservas'],
