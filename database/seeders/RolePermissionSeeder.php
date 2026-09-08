@@ -45,6 +45,7 @@ final class RolePermissionSeeder extends Seeder
                 // Club
                 'club.view',
                 'club.update',
+                'club.mercado_pago.connect',
 
                 // Branches
                 'branch.view',

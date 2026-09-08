@@ -11,6 +11,8 @@ use App\Http\Controllers\Payments\CreateRefundController;
 use App\Http\Controllers\Payments\GetRefundController;
 use App\Http\Controllers\Payments\GetReservationPaymentsController;
 use App\Http\Controllers\Payments\ListRefundsController;
+use App\Http\Controllers\Payments\MercadoPagoAccounts\ConnectMercadoPagoController;
+use App\Http\Controllers\Payments\MercadoPagoAccounts\MercadoPagoOAuthCallbackController;
 use App\Http\Controllers\Payments\MercadoPagoWebhookController;
 use App\Http\Controllers\Payments\RegisterManualPaymentController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
@@ -28,6 +30,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class)->name('auth.login');
     Route::post('/register', RegisterController::class)->name('auth.register');
 });
+
+Route::get('/integrations/mercado-pago/callback', MercadoPagoOAuthCallbackController::class)->name('mercado_pago.oauth.callback');
 
 Route::post('/webhooks/mercadopago', MercadoPagoWebhookController::class)->name('webhook.mercadopago');
 
@@ -75,6 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('', CreateClubController::class)->withoutMiddleware('permission')->name('club.create');
         Route::put('{id}', UpdateClubController::class)->name('club.update');
         Route::delete('{id}', DesactivateClubController::class)->name('club.deactivate');
+
+        Route::post('/{club_id}/mercado-pago/connect', ConnectMercadoPagoController::class)->name('club.mercado_pago.connect');
 
         // Rutas de Sucursales por Club (Lectura y Creación)
         Route::get('{club_id}/branches', GetBranchController::class)->name('branch.collection');

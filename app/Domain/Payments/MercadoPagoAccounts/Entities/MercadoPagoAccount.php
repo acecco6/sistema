@@ -74,12 +74,16 @@ final class MercadoPagoAccount
     }
 
     public function updateCredentials(
+        string $mercadoPagoUserId,
         string $accessToken,
         string $refreshToken,
         ?DateTimeImmutable $expiresAt,
+        ?string $publicKey,
     ): void {
+        $this->mercadoPagoUserId = $mercadoPagoUserId;
         $this->accessToken = $accessToken;
         $this->refreshToken = $refreshToken;
         $this->expiresAt = $expiresAt;
+        $this->publicKey = $publicKey;
     }
 }

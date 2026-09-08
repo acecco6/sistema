@@ -14,6 +14,7 @@ final class PermissionSeeder extends Seeder
             ['name' => 'club.create', 'description' => 'Crear clubes'],
             ['name' => 'club.update', 'description' => 'Modificar clubes'],
             ['name' => 'club.deactivate', 'description' => 'Desactivar clubes'],
+            ['name' => 'club.mercado_pago.connect', 'description' => 'Conectar con Mercado Pago'],
 
             ['name' => 'branch.view', 'description' => 'Ver sucursales y su información'],
             ['name' => 'branch.create', 'description' => 'Crear sucursales'],
