@@ -20,7 +20,9 @@ use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCou
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
 use App\Http\Controllers\Reservations\FixedReservations\CreateFixedReservationController;
 use App\Http\Controllers\Reservations\FixedReservations\DesactivateFixedReservationController;
+use App\Http\Controllers\Reservations\FixedReservations\GetFixedReservationConflictsController;
 use App\Http\Controllers\Reservations\FixedReservations\GetFixedReservationsController;
+use App\Http\Controllers\Reservations\FixedReservations\ResolveFixedReservationConflictController;
 use App\Http\Controllers\Reservations\FixedReservations\ShowFixedReservationController;
 use App\Http\Controllers\Reservations\GetBranchReservationsController;
 use App\Http\Controllers\Reservations\GetCustomerReservationsController;
@@ -162,9 +164,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('', CreateFixedReservationController::class)->name('fixed_reservation.create');
     });
 
+    Route::prefix('clubs/{club_id}/fixed-reservation-conflicts')->middleware('permission')->group(function () {
+        Route::get('', GetFixedReservationConflictsController::class)->name('fixed_reservation_conflict.collection');
+    });
+
     Route::prefix('fixed-reservations')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowFixedReservationController::class)->name('fixed_reservation.view');
         Route::patch('/{id}/desactivate', DesactivateFixedReservationController::class)->name('fixed_reservation.deactivate');
+    });
+
+    Route::prefix('fixed-reservation-conflicts')->middleware('permission')->group(function () {
+        Route::patch('/{id}/resolve', ResolveFixedReservationConflictController::class)->name('fixed_reservation_conflict.resolve');
     });
 
 

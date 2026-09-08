@@ -25,6 +25,7 @@ use App\Domain\Pricing\Repositories\CourtPriceRepository;
 use App\Domain\Reservations\Events\ReservationCancelled;
 use App\Domain\Reservations\Events\ReservationConfirmed;
 use App\Domain\Reservations\Events\ReservationExpired;
+use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationConflictRepository;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Domain\Roles\Repositories\RoleRepository;
@@ -36,6 +37,7 @@ use App\Infrastructure\Payments\MercadoPago\MercadoPagoOAuthHttpClient;
 use App\Infrastructure\Payments\Webhooks\MercadoPagoWebhookSignatureValidator;
 use App\Infrastructure\Persistence\{EloquentBranchRepository, EloquentClubRepository, EloquentCourtPriceRepository, EloquentCourtRepository, EloquentMembershipRepository, EloquentPermissionRepository, EloquentReservationRepository, EloquentRoleRepository, EloquentTipoCourtRepository, EloquentUserRepository};
 use App\Infrastructure\Persistence\EloquentEmailLogRepository;
+use App\Infrastructure\Persistence\EloquentFixedReservationConflictRepository;
 use App\Infrastructure\Persistence\EloquentFixedReservationRepository;
 use App\Infrastructure\Persistence\EloquentIntervalTimeTipoCourtRepository;
 use App\Infrastructure\Persistence\EloquentMercadoPagoAccountRepository;
@@ -77,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MercadoPagoAccountRepository::class, EloquentMercadoPagoAccountRepository::class,);
         $this->app->bind(MercadoPagoOAuthClient::class, MercadoPagoOAuthHttpClient::class);
         $this->app->bind(FixedReservationRepository::class, EloquentFixedReservationRepository::class);
+        $this->app->bind(FixedReservationConflictRepository::class, EloquentFixedReservationConflictRepository::class,);
     }
 
     /**

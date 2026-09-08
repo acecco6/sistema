@@ -16,6 +16,7 @@ use App\Domain\Pricing\Exceptions\CourtPriceRuleNotFoundException;
 use App\Domain\Pricing\Repositories\CourtPriceRepository;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationNotFoundException;
+use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationConflictRepository;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Shared\Exceptions\AuthorizationDeniedException;
@@ -36,6 +37,7 @@ final class CheckPermission
         private ReservationRepository $reservations,
         private PaymentRefundRepository $refunds,
         private FixedReservationRepository $fixedReservations,
+        private FixedReservationConflictRepository $fixedReservationConflicts,
     ) {}
 
     public function handle(
@@ -101,6 +103,7 @@ final class CheckPermission
             'payment' => $this->resolvePaymentScope($request),
             'refund' => $this->resolveRefundScope($request),
             'fixed_reservation' => $this->resolveFixedReservationScope($request),
+            'fixed_reservation_conflict' => $this->resolveFixedReservationConflictScope($request),
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
             ),
@@ -309,6 +312,7 @@ final class CheckPermission
                 $request,
                 $userId
             ),
+            'fixed_reservation_conflict' => $this->authorizeFixedReservationConflictCollection($request, $userId),
             default => throw new RuntimeException(
                 "No existe autorización de colección para [{$resource}]."
             ),
@@ -959,5 +963,85 @@ final class CheckPermission
         if ($membership === null) {
             throw new AuthorizationDeniedException();
         }
+    }
+
+    private function authorizeFixedReservationConflictCollection(
+        Request $request,
+        int $userId
+    ): void {
+        $clubId = $request->route('club_id');
+
+        if ($clubId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar el Club.'
+            );
+        }
+
+        $membership = $this->memberships
+            ->findActiveForScope(
+                userId: $userId,
+                clubId: (int) $clubId,
+                branchId: null,
+            );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function resolveFixedReservationConflictScope(
+        Request $request
+    ): array {
+        /*
+     * GET collection:
+     * /clubs/{club_id}/...
+     */
+        $clubId = $request->route('club_id');
+
+        if ($clubId !== null) {
+            return [
+                'clubId' => (int) $clubId,
+                'branchId' => null,
+            ];
+        }
+
+        /*
+     * PATCH /fixed-reservation-conflicts/{id}/resolve
+     */
+        $id = $request->route('id');
+
+        if ($id === null) {
+            throw new RuntimeException(
+                'No se pudo determinar el conflicto de reserva fija.'
+            );
+        }
+
+        $conflict = $this->fixedReservationConflicts
+            ->findById(
+                (int) $id
+            );
+
+        if ($conflict === null) {
+            throw new RuntimeException(
+                'No se encontró el conflicto de reserva fija.'
+            );
+        }
+
+        $fixedReservation = $this->fixedReservations
+            ->findById(
+                $conflict->getFixedReservationId()
+            );
+
+        if ($fixedReservation === null) {
+            throw new FixedReservationNotFoundException();
+        }
+
+        return [
+            'clubId' =>
+            $fixedReservation->getClubId(),
+
+            'branchId' =>
+            null,
+        ];
     }
 }

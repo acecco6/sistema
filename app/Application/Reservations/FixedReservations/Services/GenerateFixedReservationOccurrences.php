@@ -4,6 +4,7 @@ namespace App\Application\Reservations\FixedReservations\Services;
 
 use App\Application\Reservations\Create\CreateReservationCommand;
 use App\Application\Reservations\Create\CreateReservationHandler;
+use App\Domain\Reservations\Exceptions\CourtNotAvailableException;
 use App\Domain\Reservations\FixedReservations\Entities\FixedReservation;
 use App\Domain\Reservations\FixedReservations\Entities\FixedReservationSlot;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
@@ -11,7 +12,6 @@ use App\Domain\Reservations\Repositories\ReservationRepository;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
-use Throwable;
 
 final class GenerateFixedReservationOccurrences
 {
@@ -19,6 +19,7 @@ final class GenerateFixedReservationOccurrences
         private FixedReservationRepository $fixedReservations,
         private ReservationRepository $reservations,
         private CreateReservationHandler $createReservationHandler,
+        private FixedReservationConflictService $conflictService,
     ) {}
 
     public function generate(
@@ -85,6 +86,15 @@ final class GenerateFixedReservationOccurrences
                     recurrenceDate: $date,
                 )
             ) {
+                /*
+                * Si ahora existe la occurrence significa que
+                * cualquier conflicto anterior ya no corresponde.
+                */
+                $this->conflictService->resolveOccurrence(
+                    fixedReservationSlotId: $slot->getId(),
+                    recurrenceDate: $date,
+                );
+
                 continue;
             }
 
@@ -107,7 +117,6 @@ final class GenerateFixedReservationOccurrences
             }
 
             try {
-
                 $this->createReservationHandler->handle(
                     new CreateReservationCommand(
                         courtId: $slot->getCourtId(),
@@ -135,14 +144,49 @@ final class GenerateFixedReservationOccurrences
                         confirmed: true,
 
                         fixedReservationSlotId: $slot->getId(),
+
                         recurrenceDate: $date,
                     )
                 );
-            } catch (Throwable $exception) {
 
+                /*
+                * Si antes había conflicto y ahora pudo
+                * generarse, queda resuelto automáticamente.
+                */
+                $this->conflictService->resolveOccurrence(
+                    fixedReservationSlotId: $slot->getId(),
+
+                    recurrenceDate: $date,
+                );
+            } catch (CourtNotAvailableException $exception) {
+
+                /*
+                * Alta inicial:
+                * sigue siendo estricta.
+                */
                 if (! $skipConflicts) {
                     throw $exception;
                 }
+
+                /*
+                * Job:
+                * guarda alerta y continúa.
+                */
+                $this->conflictService->register(
+                    fixedReservation: $fixedReservation,
+
+                    slot: $slot,
+
+                    recurrenceDate: $date,
+
+                    startsAt: $startsAt,
+
+                    endsAt: $endsAt,
+
+                    reason: 'court_not_available',
+
+                    message: 'La cancha está ocupada en el horario de la reserva fija.',
+                );
 
                 report($exception);
 
