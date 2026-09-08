@@ -18,6 +18,10 @@ use App\Http\Controllers\Payments\RegisterManualPaymentController;
 use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
 use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
+use App\Http\Controllers\Reservations\FixedReservations\CreateFixedReservationController;
+use App\Http\Controllers\Reservations\FixedReservations\DesactivateFixedReservationController;
+use App\Http\Controllers\Reservations\FixedReservations\GetFixedReservationsController;
+use App\Http\Controllers\Reservations\FixedReservations\ShowFixedReservationController;
 use App\Http\Controllers\Reservations\GetBranchReservationsController;
 use App\Http\Controllers\Reservations\GetCustomerReservationsController;
 use App\Http\Controllers\Reservations\ShowCustomerReservationController;
@@ -151,6 +155,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('courts/{court_id}/reservations')->middleware('permission')->group(function () {
         Route::get('', GetCourtReservationsController::class)->name('reservation.collection');
         Route::post('', CreateReservationController::class)->name('reservation.create');
+    });
+
+    Route::prefix('clubs/{club_id}/fixed-reservations')->middleware('permission')->group(function () {
+        Route::get('', GetFixedReservationsController::class)->name('fixed_reservation.collection');
+        Route::post('', CreateFixedReservationController::class)->name('fixed_reservation.create');
+    });
+
+    Route::prefix('fixed-reservations')->middleware('permission')->group(function () {
+        Route::get('/{id}', ShowFixedReservationController::class)->name('fixed_reservation.view');
+        Route::patch('/{id}/desactivate', DesactivateFixedReservationController::class)->name('fixed_reservation.deactivate');
     });
 
 

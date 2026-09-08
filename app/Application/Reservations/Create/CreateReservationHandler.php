@@ -156,6 +156,8 @@ final class CreateReservationHandler
                     notes: $command->notes,
                     cancelledAt: null,
                     expiresAt: $expiresAt,
+                    fixedReservationSlotId: $command->fixedReservationSlotId,
+                    recurrenceDate: $command->recurrenceDate,
                 );
 
 

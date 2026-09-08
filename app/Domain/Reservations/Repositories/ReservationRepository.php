@@ -56,4 +56,11 @@ interface ReservationRepository
     public function findByPublicToken(string $token): ?Reservation;
 
     public function findByIdForUpdate(int $id): ?Reservation;
+
+    public function existsFixedOccurrence(int $fixedReservationSlotId, DateTimeImmutable $recurrenceDate): bool;
+
+    /**
+     * @return Reservation[]
+     */
+    public function findFutureByFixedReservation(int $fixedReservationId, DateTimeImmutable $from): array;
 }

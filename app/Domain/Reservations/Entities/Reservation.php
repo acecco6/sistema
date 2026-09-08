@@ -33,6 +33,9 @@ final class Reservation
         private ?string $notes = null,
         private ?DateTimeImmutable $cancelledAt = null,
         private ?DateTimeImmutable $expiresAt = null,
+
+        private ?int $fixedReservationSlotId = null,
+        private ?DateTimeImmutable $recurrenceDate = null,
     ) {
         $this->validateCustomer();
     }
@@ -304,5 +307,20 @@ final class Reservation
         $this->expiresAt = null;
 
         return true;
+    }
+
+    public function getFixedReservationSlotId(): ?int
+    {
+        return $this->fixedReservationSlotId;
+    }
+
+    public function getRecurrenceDate(): ?DateTimeImmutable
+    {
+        return $this->recurrenceDate;
+    }
+
+    public function isFixedReservationOccurrence(): bool
+    {
+        return $this->fixedReservationSlotId !== null;
     }
 }

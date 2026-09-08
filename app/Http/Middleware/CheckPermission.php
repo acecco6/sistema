@@ -4,17 +4,19 @@ namespace App\Http\Middleware;
 
 use App\Application\Authorization\AuthorizationService;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
-use App\Domain\Payments\Exceptions\PaymentRefundNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Courts\Exceptions\CourtNotFoundException;
 use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Memberships\Exceptions\MembershipNotFoundException;
 use App\Domain\Memberships\Repositories\MembershipRepository;
+use App\Domain\Payments\Exceptions\PaymentRefundNotFoundException;
 use App\Domain\Payments\Repositories\PaymentRefundRepository;
 use App\Domain\Pricing\Exceptions\CourtPriceNotFoundException;
 use App\Domain\Pricing\Exceptions\CourtPriceRuleNotFoundException;
 use App\Domain\Pricing\Repositories\CourtPriceRepository;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
+use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationNotFoundException;
+use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Shared\Exceptions\AuthorizationDeniedException;
 use Closure;
@@ -33,6 +35,7 @@ final class CheckPermission
         private CourtPriceRepository $prices,
         private ReservationRepository $reservations,
         private PaymentRefundRepository $refunds,
+        private FixedReservationRepository $fixedReservations,
     ) {}
 
     public function handle(
@@ -97,6 +100,7 @@ final class CheckPermission
             'reservation' => $this->resolveReservationScope($request),
             'payment' => $this->resolvePaymentScope($request),
             'refund' => $this->resolveRefundScope($request),
+            'fixed_reservation' => $this->resolveFixedReservationScope($request),
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
             ),
@@ -286,28 +290,25 @@ final class CheckPermission
             'club' => $this->authorizeClubCollection(
                 userId: $userId,
             ),
-
             'branch' => $this->authorizeBranchCollection(
                 request: $request,
                 userId: $userId,
             ),
-
             'court' => $this->authorizeCourtCollection(
                 request: $request,
                 userId: $userId,
             ),
-
             'court_price' => $this->authorizeCourtPriceCollection($request, $userId),
-
             'court_promotion' => $this->authorizeCourtPromotionCollection($request, $userId),
-
             'reservation' => $this->authorizeReservationCollection($request, $userId),
-
             'refund' => $this->authorizeRefundCollection(
                 request: $request,
                 userId: $userId,
             ),
-
+            'fixed_reservation' => $this->authorizeFixedReservationCollection(
+                $request,
+                $userId
+            ),
             default => throw new RuntimeException(
                 "No existe autorización de colección para [{$resource}]."
             ),
@@ -772,16 +773,16 @@ final class CheckPermission
     private function resolveRefundScope(Request $request): array
     {
         /*
-    |--------------------------------------------------------------------------
-    | VIEW / COMPLETE REFUND
-    |--------------------------------------------------------------------------
-    |
-    | GET   /refunds/{id}
-    | PATCH /refunds/{id}/complete
-    |
-    | El {id} pertenece al PaymentRefund.
-    |
-    */
+        |--------------------------------------------------------------------------
+        | VIEW / COMPLETE REFUND
+        |--------------------------------------------------------------------------
+        |
+        | GET   /refunds/{id}
+        | PATCH /refunds/{id}/complete
+        |
+        | El {id} pertenece al PaymentRefund.
+        |
+        */
 
         $refundId = $request->route('id');
 
@@ -800,10 +801,10 @@ final class CheckPermission
         }
 
         /*
-     * PaymentRefund
-     *      ↓
-     * Reservation
-     */
+        * PaymentRefund
+        *      ↓
+        * Reservation
+        */
         $reservation = $this->reservations->findById(
             $refund->getReservationId()
         );
@@ -813,10 +814,10 @@ final class CheckPermission
         }
 
         /*
-     * Reservation
-     *      ↓
-     * Court
-     */
+        * Reservation
+        *      ↓
+        * Court
+        */
         $court = $this->courts->findById(
             $reservation->getCourtId()
         );
@@ -826,10 +827,10 @@ final class CheckPermission
         }
 
         /*
-     * Court
-     *      ↓
-     * Branch
-     */
+        * Court
+        *      ↓
+        * Branch
+        */
         $branch = $this->branches->findById(
             $court->getBranchId()
         );
@@ -869,6 +870,90 @@ final class CheckPermission
                 userId: $userId,
                 clubId: $branch->getClubId(),
                 branchId: $branch->getId(),
+            );
+
+        if ($membership === null) {
+            throw new AuthorizationDeniedException();
+        }
+    }
+
+    private function resolveFixedReservationScope(
+        Request $request
+    ): array {
+        /*
+        * POST
+        * /clubs/{club_id}/fixed-reservations
+        */
+        if ($request->route('club_id') !== null) {
+            return [
+                'clubId' =>
+                (int) $request->route('club_id'),
+
+                /*
+             * La serie puede involucrar distintas
+             * Branches del mismo Club.
+             *
+             * Por eso requiere scope global de Club.
+             */
+                'branchId' => null,
+            ];
+        }
+
+        /*
+        * GET/PATCH
+        * /fixed-reservations/{id}
+        */
+        $id = $request->route('id');
+
+        if ($id === null) {
+            throw new RuntimeException(
+                'No se pudo determinar la reserva fija.'
+            );
+        }
+
+        $fixedReservation =
+            $this->fixedReservations->findById(
+                (int) $id
+            );
+
+        if ($fixedReservation === null) {
+            throw new FixedReservationNotFoundException();
+        }
+
+        return [
+            'clubId' =>
+            $fixedReservation->getClubId(),
+
+            'branchId' => null,
+        ];
+    }
+
+
+    private function authorizeFixedReservationCollection(
+        Request $request,
+        int $userId
+    ): void {
+        $clubId = $request->route('club_id');
+
+        if ($clubId === null) {
+            throw new RuntimeException(
+                'No se pudo determinar el Club.'
+            );
+        }
+
+        /*
+        * Las reservas fijas son Club-scoped.
+        *
+        * Para listar reservas fijas necesitamos
+        * una membership GLOBAL activa del Club.
+        *
+        * branchId = null
+        */
+        $membership = $this->memberships
+            ->findActiveForScope(
+                userId: $userId,
+                clubId: (int) $clubId,
+                branchId: null,
             );
 
         if ($membership === null) {

@@ -92,6 +92,10 @@ final class RolePermissionSeeder extends Seeder
                 'reservation.confirm',
                 'reservation.refund.create',
 
+                'fixed_reservation.create',
+                'fixed_reservation.view',
+                'fixed_reservation.deactivate',
+
                 'payment.create',
                 'payment.view',
 
@@ -158,6 +162,10 @@ final class RolePermissionSeeder extends Seeder
                 'reservation.confirm',
                 'reservation.refund.create',
 
+                'fixed_reservation.create',
+                'fixed_reservation.view',
+                'fixed_reservation.deactivate',
+
                 'payment.create',
                 'payment.view',
 
@@ -206,9 +214,16 @@ final class RolePermissionSeeder extends Seeder
                 */
                 'reservation.create',
                 'reservation.view',
+
+                'fixed_reservation.create',
+                'fixed_reservation.view',
+
                 'payment.view',
                 // 'reservation.cancel',
                 // 'reservation.confirm',
+
+
+
 
             ],
         ];
