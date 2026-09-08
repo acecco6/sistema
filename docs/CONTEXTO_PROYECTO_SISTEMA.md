@@ -1,8 +1,8 @@
 # Estado del proyecto — Sistema de gestión de clubes
 
 > Documento de continuidad para retomar el proyecto en futuras conversaciones.
-> Actualizado: **01/09/2026**.
-> Fuente de esta actualización: estado real del proyecto entregado en `sistema-master (2).zip` y cierre funcional de Payments + Refunds.
+> Actualizado: **08/09/2026**.
+> Fuente de esta actualización: estado real inspeccionado en `sistema-master(9).zip`, incluyendo Mercado Pago multi-seller, agenda, notifications y reservas fijas.
 
 ---
 
@@ -2323,4 +2323,127 @@ Events / Notifications / Queues
 Reportes financieros / caja
 ↓
 Performance / EXPLAIN
+```
+
+
+---
+
+# ACTUALIZACIÓN 08/09/2026 — RESERVAS FIJAS Y CONFLICTOS
+
+El backend incorpora un módulo completo de reservas fijas semanales.
+
+Archivos principales:
+
+```text
+app/Domain/Reservations/FixedReservations/
+app/Application/Reservations/FixedReservations/
+app/Http/Controllers/Reservations/FixedReservations/
+app/Http/Requests/Reservations/FixedReservations/
+app/Infrastructure/Persistence/EloquentFixedReservationRepository.php
+app/Infrastructure/Persistence/EloquentFixedReservationConflictRepository.php
+app/Jobs/GenerateFixedReservationOccurrencesJob.php
+app/Models/FixedReservation.php
+app/Models/FixedReservationSlot.php
+app/Models/FixedReservationConflict.php
+```
+
+Modelo:
+
+```text
+FixedReservation
+    1
+    ↓
+    N FixedReservationSlot
+          ↓
+          materializa
+          ↓
+       Reservation
+```
+
+Una serie pertenece a un Club y puede representar customer registrado o guest snapshot.
+
+Cada slot define:
+
+```text
+court_id
+day_of_week ISO 1..7
+start_time
+duration_minutes
+active
+```
+
+Las occurrences reales se guardan en `reservations` con:
+
+```text
+fixed_reservation_slot_id
+recurrence_date
+```
+
+Esto permite que la agenda y toda la lógica normal de Reservation continúen siendo la fuente operativa.
+
+Reglas:
+
+- occurrences fijas se crean `CONFIRMED`;
+- no tienen expiración PENDING;
+- una occurrence cancelada permanece y no se regenera;
+- `(fixed_reservation_slot_id, recurrence_date)` da idempotencia;
+- alta inicial valida agenda de forma estricta;
+- Job diario mantiene un horizonte rolling de 8 semanas;
+- un conflicto puntual del Job no detiene el resto de la serie;
+- `CourtNotAvailableException` genera `FixedReservationConflict`;
+- los conflictos no se duplican por slot+fecha;
+- si el horario se libera y el Job logra crear la occurrence, el conflicto se resuelve automáticamente;
+- también existe resolución manual.
+
+API:
+
+```text
+GET   /clubs/{club_id}/fixed-reservations
+POST  /clubs/{club_id}/fixed-reservations
+GET   /fixed-reservations/{id}
+PATCH /fixed-reservations/{id}/desactivate
+
+GET   /clubs/{club_id}/fixed-reservation-conflicts
+PATCH /fixed-reservation-conflicts/{id}/resolve
+```
+
+Filtro de conflictos:
+
+```text
+?resolved=0
+?resolved=1
+```
+
+Permissions:
+
+```text
+fixed_reservation.create
+fixed_reservation.view
+fixed_reservation.deactivate
+fixed_reservation_conflict.resolve
+```
+
+Scheduler:
+
+```text
+GenerateFixedReservationOccurrencesJob
+```
+
+registrado en `routes/console.php` con ejecución diaria.
+
+Tests:
+
+```text
+tests/Feature/Reservations/FixedReservations/
+```
+
+cubren generación, múltiples slots, idempotencia, cancelación puntual, conflictos, resolución automática/reapertura y Job.
+
+Documentación específica:
+
+```text
+docs/FIXED_RESERVATIONS_IMPLEMENTATION.md
+docs/FRONTEND_IMPLEMENTATION.md
+docs/FRONTEND_AI_SKILL.md
+docs/FRONTEND_ROADMAP.md
 ```

@@ -1056,3 +1056,43 @@ Comenzar creando:
 ```
 
 Después continuar con las entidades de Domain antes de implementar Application o Controllers.
+
+
+---
+
+# ACTUALIZACIÓN — RESERVAS FIJAS
+
+Reservations ahora también puede representar una occurrence materializada de una serie fija.
+
+Campos agregados:
+
+```text
+fixed_reservation_slot_id nullable
+recurrence_date nullable
+```
+
+Reserva común:
+
+```text
+fixed_reservation_slot_id = NULL
+recurrence_date = NULL
+```
+
+Occurrence fija:
+
+```text
+fixed_reservation_slot_id = <slot>
+recurrence_date = YYYY-MM-DD
+status = confirmed
+expires_at = NULL
+```
+
+La disponibilidad no distingue una occurrence fija de una Reservation normal: si está CONFIRMED, bloquea igual.
+
+La cancelación de una occurrence no elimina la fila. Esto es obligatorio para que el generador no la recree.
+
+La serie y sus conflictos se documentan en:
+
+```text
+FIXED_RESERVATIONS_IMPLEMENTATION.md
+```

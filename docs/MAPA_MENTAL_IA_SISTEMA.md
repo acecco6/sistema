@@ -2,7 +2,7 @@
 
 > Objetivo: que cualquier IA pueda ubicarse rápido en el proyecto, entender qué archivo tocar, qué capas participan y qué otros módulos pueden verse afectados antes de responder o proponer cambios.
 >
-> Fuente de este mapa: `sistema-master(7).zip`.
+> Fuente de este mapa: `sistema-master(9).zip`. Actualizado: **08/09/2026**.
 
 ---
 
@@ -2286,3 +2286,94 @@ Test existente
 ```
 
 Y solo después proponer el cambio mínimo necesario.
+
+
+---
+
+# MAPA NUEVO — RESERVAS FIJAS
+
+Cuando una consulta mencione recurrencia, turno semanal, reserva fija o conflicto futuro, inspeccionar:
+
+```text
+routes/api.php
+↓
+Http/Controllers/Reservations/FixedReservations
+↓
+Http/Requests/Reservations/FixedReservations
+↓
+Application/Reservations/FixedReservations
+├── Create
+├── Get
+├── Show
+├── Deactivate
+├── Validation
+├── Services
+└── Conflicts
+↓
+Domain/Reservations/FixedReservations
+├── Entities
+├── Exceptions
+└── Repositories
+↓
+Infrastructure/Persistence/
+├── EloquentFixedReservationRepository
+└── EloquentFixedReservationConflictRepository
+↓
+Models
+├── FixedReservation
+├── FixedReservationSlot
+└── FixedReservationConflict
+↓
+Reservation normal
+↓
+GenerateFixedReservationOccurrencesJob
+↓
+tests/Feature/Reservations/FixedReservations
+```
+
+Modelo mental:
+
+```text
+SERIE
+FixedReservation
+↓
+SLOTS SEMANALES
+FixedReservationSlot
+↓
+GENERADOR
+GenerateFixedReservationOccurrences
+↓
+OCCURRENCES
+Reservation
+```
+
+Conflictos del Job:
+
+```text
+occurrence futura
+↓
+CreateReservationHandler
+↓
+CourtNotAvailableException
+↓
+FixedReservationConflictService
+↓
+FixedReservationConflict
+↓
+continúa la serie
+```
+
+No confundir:
+
+```text
+FixedReservation = configuración recurrente
+Reservation      = occurrence operativa real
+```
+
+Para frontend leer además:
+
+```text
+FRONTEND_IMPLEMENTATION.md
+FRONTEND_AI_SKILL.md
+FRONTEND_ROADMAP.md
+```
