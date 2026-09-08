@@ -57,23 +57,21 @@ final class MercadoPagoOAuthHttpClient implements MercadoPagoOAuthClient
     ): MercadoPagoOAuthCredentials {
         $response = Http::asForm()
             ->acceptJson()
-            ->post(
-                'https://api.mercadopago.com/oauth/token',
-                [
-                    'client_id' => $this->clientId,
-                    'client_secret' => $this->clientSecret,
-                    'grant_type' => 'authorization_code',
-                    'code' => $code,
-                    'redirect_uri' => $this->redirectUri,
-                    'state' => $state,
-                ]
-            );
+            ->post('https://api.mercadopago.com/oauth/token', [
+                'client_id' => config('services.mercadopago.client_id'),
+                'client_secret' => config('services.mercadopago.client_secret'),
+                'grant_type' => 'authorization_code',
+                'code' => $code,
+                'redirect_uri' => config('services.mercadopago.redirect_uri'),
+            ]);
 
         if ($response->failed()) {
+            $error = $response->json();
             throw new RuntimeException(
                 'No se pudo obtener el Access Token de Mercado Pago.'
             );
         }
+        $data = $response->json();
 
         return $this->mapCredentials(
             $response->json()

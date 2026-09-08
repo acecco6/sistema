@@ -28,7 +28,7 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
         DateTimeImmutable $expiresAt,
         ?string $payerEmail = null,
     ): CheckoutResult {
-        $this->configureForAccount(
+        $account = $this->configureForAccount(
             $mercadoPagoAccountId
         );
 
@@ -44,30 +44,18 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
                 ],
             ],
 
-            'external_reference' =>
-            $externalReference,
-
-            'expires' => true,
-
-            'expiration_date_to' =>
-            $expiresAt->format(
-                DATE_ATOM
-            ),
-
-            'back_urls' => [
-                'success' => config(
-                    'services.mercadopago.success_url'
-                ),
-
-                'pending' => config(
-                    'services.mercadopago.pending_url'
-                ),
-
-                'failure' => config(
-                    'services.mercadopago.failure_url'
-                ),
-            ],
+            'external_reference' => $externalReference,
         ];
+
+        $backUrls = array_filter([
+            'success' => config('services.mercadopago.success_url'),
+            'pending' => config('services.mercadopago.pending_url'),
+            'failure' => config('services.mercadopago.failure_url'),
+        ]);
+
+        if (!empty($backUrls)) {
+            $request['back_urls'] = $backUrls;
+        }
 
         if ($payerEmail !== null) {
             $request['payer'] = [
@@ -78,8 +66,7 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
         $requestOptions = new RequestOptions();
 
         $requestOptions->setCustomHeaders([
-            'X-Idempotency-Key: '
-                . $externalReference,
+            'x-idempotency-key' => $externalReference,
         ]);
 
         $preference = $client->create(
@@ -87,19 +74,34 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
             $requestOptions
         );
 
+        // dd([
+        //     'preference_id' => $preference->id ?? null,
+        //     'collector_id' => $preference->collector_id ?? null,
+        //     'client_id' => $preference->client_id ?? null,
+        //     'init_point' => $preference->init_point ?? null,
+        //     'sandbox_init_point' => $preference->sandbox_init_point ?? null,
+        // ]);
         if (
             empty($preference->id)
-            || empty($preference->init_point)
+            || (empty($preference->init_point) && empty($preference->sandbox_init_point))
         ) {
             throw new RuntimeException(
                 'Mercado Pago no devolvió una preference válida.'
             );
         }
 
+        $accessToken = $account->getAccessToken();
+        $isTestToken = str_starts_with($accessToken, 'TEST-');
+        $useSandbox = $isTestToken || (bool) config('services.mercadopago.sandbox', true);
+
+        $checkoutUrl = ($useSandbox && !empty($preference->sandbox_init_point))
+            ? (string) $preference->sandbox_init_point
+            : (string) ($preference->init_point ?? $preference->sandbox_init_point);
+
         return new CheckoutResult(
             preferenceId: (string) $preference->id,
 
-            checkoutUrl: (string) $preference->init_point,
+            checkoutUrl: $preference->init_point,
         );
     }
 
@@ -167,7 +169,7 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
 
     private function configureForAccount(
         int $mercadoPagoAccountId
-    ): void {
+    ): \App\Domain\Payments\MercadoPagoAccounts\Entities\MercadoPagoAccount {
         $account = $this->mercadoPagoAccounts
             ->findById(
                 $mercadoPagoAccountId
@@ -190,5 +192,7 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
         MercadoPagoConfig::setAccessToken(
             $accessToken
         );
+
+        return $account;
     }
 }

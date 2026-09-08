@@ -50,6 +50,8 @@ return [
         'success_url' => env('MERCADO_PAGO_SUCCESS_URL'),
         'pending_url' => env('MERCADO_PAGO_PENDING_URL'),
         'failure_url' => env('MERCADO_PAGO_FAILURE_URL'),
+
+        'sandbox' => env('MERCADO_PAGO_SANDBOX', env('APP_ENV') !== 'production'),
     ],
 
 ];
