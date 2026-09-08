@@ -11,6 +11,7 @@ use App\Domain\Reservations\Repositories\ReservationRepository;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
+use Throwable;
 
 final class GenerateFixedReservationOccurrences
 {
@@ -24,6 +25,7 @@ final class GenerateFixedReservationOccurrences
         FixedReservation $fixedReservation,
         DateTimeImmutable $from,
         DateTimeImmutable $to,
+        bool $skipConflicts = false,
     ): void {
         if (! $fixedReservation->isActive()) {
             return;
@@ -56,6 +58,7 @@ final class GenerateFixedReservationOccurrences
                 slot: $slot,
                 from: $from,
                 to: $to,
+                skipConflicts: $skipConflicts,
             );
         }
     }
@@ -65,11 +68,10 @@ final class GenerateFixedReservationOccurrences
         FixedReservationSlot $slot,
         DateTimeImmutable $from,
         DateTimeImmutable $to,
+        bool $skipConflicts,
     ): void {
-        foreach (
-            $this->datesBetween($from, $to)
-            as $date
-        ) {
+        foreach ($this->datesBetween($from, $to) as $date) {
+
             if (
                 (int) $date->format('N')
                 !== $slot->getDayOfWeek()
@@ -100,50 +102,52 @@ final class GenerateFixedReservationOccurrences
                 )
             );
 
-            /*
-             * Puede ocurrir que el primer día de la ventana
-             * sea hoy y el horario ya haya pasado.
-             */
             if ($startsAt <= new DateTimeImmutable()) {
                 continue;
             }
 
-            $this->createReservationHandler->handle(
-                new CreateReservationCommand(
-                    courtId: $slot->getCourtId(),
+            try {
 
-                    customerUserId: $fixedReservation
-                        ->getCustomerUserId(),
+                $this->createReservationHandler->handle(
+                    new CreateReservationCommand(
+                        courtId: $slot->getCourtId(),
 
-                    createdByUserId: $fixedReservation
-                        ->getCreatedByUserId(),
+                        customerUserId: $fixedReservation
+                            ->getCustomerUserId(),
 
-                    guestName: $fixedReservation
-                        ->getGuestName(),
+                        createdByUserId: $fixedReservation
+                            ->getCreatedByUserId(),
 
-                    guestEmail: $fixedReservation
-                        ->getGuestEmail(),
+                        guestName: $fixedReservation
+                            ->getGuestName(),
 
-                    guestPhone: $fixedReservation
-                        ->getGuestPhone(),
+                        guestEmail: $fixedReservation
+                            ->getGuestEmail(),
 
-                    startsAt: $startsAt,
+                        guestPhone: $fixedReservation
+                            ->getGuestPhone(),
 
-                    endsAt: $endsAt,
+                        startsAt: $startsAt,
+                        endsAt: $endsAt,
 
-                    notes: $fixedReservation->getNotes(),
+                        notes: $fixedReservation->getNotes(),
 
-                    /*
-                     * Las reservas fijas no pueden ser
-                     * PENDING porque expirarían a los 15 min.
-                     */
-                    confirmed: true,
+                        confirmed: true,
 
-                    fixedReservationSlotId: $slot->getId(),
+                        fixedReservationSlotId: $slot->getId(),
+                        recurrenceDate: $date,
+                    )
+                );
+            } catch (Throwable $exception) {
 
-                    recurrenceDate: $date,
-                )
-            );
+                if (! $skipConflicts) {
+                    throw $exception;
+                }
+
+                report($exception);
+
+                continue;
+            }
         }
     }
 

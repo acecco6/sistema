@@ -276,19 +276,11 @@ final class EloquentReservationRepository implements ReservationRepository
             : null;
     }
 
-    public function existsFixedOccurrence(
-        int $fixedReservationSlotId,
-        DateTimeImmutable $recurrenceDate
-    ): bool {
+    public function existsFixedOccurrence(int $fixedReservationSlotId, DateTimeImmutable $recurrenceDate): bool
+    {
         return EloquentReservation::query()
-            ->where(
-                'fixed_reservation_slot_id',
-                $fixedReservationSlotId
-            )
-            ->whereDate(
-                'recurrence_date',
-                $recurrenceDate->format('Y-m-d')
-            )
+            ->where('fixed_reservation_slot_id', $fixedReservationSlotId)
+            ->whereDate('recurrence_date', $recurrenceDate->format('Y-m-d'))
             ->exists();
     }
 
