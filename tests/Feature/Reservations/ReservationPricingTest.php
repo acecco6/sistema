@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Reservations;
 
+use App\Application\Payments\DTOs\CheckoutResult;
+use App\Application\Payments\Gateways\PaymentGateway;
 use App\Models\Branch;
 use App\Models\Club;
 use App\Models\Court;
@@ -19,12 +21,31 @@ final class ReservationPricingTest extends TestCase
 
     public function test_reserva_guarda_precio_base_como_precio_historico(): void
     {
+
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
         [
             $club,
             $branch,
             $court,
             $tipoCourt,
         ] = $this->createScenario();
+
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
 
         $this->createInterval(
             branchId: $branch->id,
@@ -89,12 +110,32 @@ final class ReservationPricingTest extends TestCase
 
     public function test_reserva_completa_dentro_de_promocion_guarda_precio_promocional(): void
     {
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
             $court,
             $tipoCourt,
         ] = $this->createScenario();
+
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
 
         $this->createInterval(
             branchId: $branch->id,
@@ -174,6 +215,21 @@ final class ReservationPricingTest extends TestCase
 
     public function test_reserva_que_sale_de_promocion_guarda_dos_segmentos(): void
     {
+
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
@@ -181,6 +237,10 @@ final class ReservationPricingTest extends TestCase
             $tipoCourt,
         ] = $this->createScenario();
 
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
         $this->createInterval(
             branchId: $branch->id,
             tipoCourtId: $tipoCourt->id,
@@ -282,6 +342,21 @@ final class ReservationPricingTest extends TestCase
 
     public function test_reserva_que_entra_en_promocion_calcula_parcialmente_cada_precio(): void
     {
+
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
@@ -289,6 +364,10 @@ final class ReservationPricingTest extends TestCase
             $tipoCourt,
         ] = $this->createScenario();
 
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
         /*
          * Para poder reservar 13:30 → 14:30,
          * el intervalo debe permitir comenzar
@@ -393,12 +472,33 @@ final class ReservationPricingTest extends TestCase
 
     public function test_cambio_posterior_de_promocion_no_modifica_precio_historico_de_reserva(): void
     {
+
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
             $court,
             $tipoCourt,
         ] = $this->createScenario();
+
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
 
         $this->createInterval(
             branchId: $branch->id,

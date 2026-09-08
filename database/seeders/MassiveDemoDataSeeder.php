@@ -67,7 +67,7 @@ final class MassiveDemoDataSeeder extends Seeder
                 'description' => 'Cancha de fútbol 7',
             ],
         ])->map(
-            fn (array $data) => TipoCourt::firstOrCreate(
+            fn(array $data) => TipoCourt::firstOrCreate(
                 ['name' => $data['name']],
                 ['description' => $data['description']]
             )
@@ -362,8 +362,7 @@ final class MassiveDemoDataSeeder extends Seeder
     ): void {
         $scenario = $index % 7;
 
-        [$startsAt, $endsAt, $status, $expiresAt, $cancelledAt] =
-            $this->crearEscenarioTemporal($scenario, $intervalMinutes, $index);
+        [$startsAt, $endsAt, $status, $expiresAt, $cancelledAt] = $this->crearEscenarioTemporal($scenario, $intervalMinutes, $index);
 
         // Aproximadamente 65% son clientes registrados y 35% guest.
         $esClienteRegistrado = fake()->boolean(65);
@@ -379,7 +378,7 @@ final class MassiveDemoDataSeeder extends Seeder
         $guestEmail = null;
         $guestPhone = null;
 
-        if (! $esClienteRegistrado) {
+        if (!$esClienteRegistrado) {
             $guestName = fake()->name();
 
             if (fake()->boolean()) {
@@ -639,11 +638,8 @@ final class MassiveDemoDataSeeder extends Seeder
      *
      * @return array{0: Carbon, 1: Carbon, 2: ReservationStatus, 3: ?Carbon, 4: ?Carbon}
      */
-    private function crearEscenarioTemporal(
-        int $scenario,
-        int $intervalMinutes,
-        int $index,
-    ): array {
+    private function crearEscenarioTemporal(int $scenario, int $intervalMinutes, int $index): array
+    {
         // Separar cada reserva por día evita overlaps incluso si el intervalo es 60.
         $futureDay = now()->addDays(2 + $index)->startOfDay();
         $pastDay = now()->subDays(2 + $index)->startOfDay();

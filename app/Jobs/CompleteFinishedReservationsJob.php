@@ -24,14 +24,8 @@ final class CompleteFinishedReservationsJob implements ShouldQueue
              * a COMPLETED.
              */
             $reservation->complete();
-
-            $updated = $reservations->update(
-                $reservation
-            );
-
-            ReservationCompleted::dispatch(
-                $updated->getId()
-            );
+            $updated = $reservations->update($reservation);
+            ReservationCompleted::dispatch($updated->getId());
         }
     }
 }

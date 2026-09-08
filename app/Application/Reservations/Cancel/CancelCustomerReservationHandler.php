@@ -32,9 +32,11 @@ final class CancelCustomerReservationHandler
 
         $updated = $this->reservations->update($reservation);
 
-        ReservationCancelled::dispatch(
-            $updated->getId()
-        );
+        // Only dispatch if reservation has email or user
+        if ($reservation->getGuestEmail() !== null || $reservation->getCustomerUserId() !== null) {
+            ReservationCancelled::dispatch($updated->getId());
+        }
+
         return ReservationDto::fromDomain($updated);
     }
 }

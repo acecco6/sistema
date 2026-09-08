@@ -2,9 +2,10 @@
 
 namespace App\Application\Payments\Webhooks;
 
-final class ProcessMercadoPagoWebhookCommand
+final readonly class ProcessMercadoPagoWebhookCommand
 {
     public function __construct(
-        public readonly string $providerPaymentId,
+        public string $providerPaymentId,
+        public string $mercadoPagoUserId,
     ) {}
 }

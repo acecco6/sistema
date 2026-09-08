@@ -9,6 +9,7 @@ use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\MercadoPagoAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -56,6 +57,7 @@ final class MercadoPagoWebhookControllerTest extends TestCase
             '/api/webhooks/mercadopago?data.id=123456789&type=payment',
             [
                 'type' => 'payment',
+                'user_id' => 'TEST-SELLER-INVALID-SIGNATURE',
                 'data' => [
                     'id' => '123456789',
                 ],
@@ -94,12 +96,18 @@ final class MercadoPagoWebhookControllerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-WEBHOOK-VALIDO')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         /*
      * 1. Simulamos una firma válida de Mercado Pago.
@@ -133,7 +141,10 @@ final class MercadoPagoWebhookControllerTest extends TestCase
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('987654321')
+            ->with(
+                $mercadoPagoAccount->id,
+                '987654321'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '987654321',
@@ -164,6 +175,7 @@ final class MercadoPagoWebhookControllerTest extends TestCase
                 ],
 
                 'type' => 'payment',
+                'user_id' => $mercadoPagoAccount->mercado_pago_user_id,
             ],
             [
                 'x-signature' => 'firma-valida',
@@ -248,6 +260,7 @@ final class MercadoPagoWebhookControllerTest extends TestCase
             '/api/webhooks/mercadopago?data.id=123456789&type=merchant_order',
             [
                 'type' => 'merchant_order',
+                'user_id' => 'TEST-SELLER-IGNORED',
                 'data' => [
                     'id' => '123456789',
                 ],
@@ -260,4 +273,26 @@ final class MercadoPagoWebhookControllerTest extends TestCase
 
         $response->assertOk();
     }
+
+    private function createMercadoPagoAccountForReservation(
+        Reservation $reservation
+    ): MercadoPagoAccount {
+        $court = \App\Models\Court::query()
+            ->findOrFail($reservation->court_id);
+
+        $branch = \App\Models\Branch::query()
+            ->findOrFail($court->branch_id);
+
+        return MercadoPagoAccount::create([
+            'club_id' => $branch->club_id,
+            'mercado_pago_user_id' => 'TEST-SELLER-' . $branch->club_id,
+            'access_token' => 'TEST-ACCESS-TOKEN',
+            'refresh_token' => 'TEST-REFRESH-TOKEN',
+            'expires_at' => now()->addMonths(6),
+            'public_key' => 'TEST-PUBLIC-KEY',
+            'active' => true,
+            'connected_at' => now(),
+        ]);
+    }
+
 }

@@ -9,6 +9,7 @@ use DateTimeImmutable;
 interface PaymentGateway
 {
     public function createCheckout(
+        int $mercadoPagoAccountId,
         string $externalReference,
         string $title,
         string $amount,
@@ -17,6 +18,7 @@ interface PaymentGateway
     ): CheckoutResult;
 
     public function getPayment(
-        string $providerPaymentId
+        int $mercadoPagoAccountId,
+        string $providerPaymentId,
     ): PaymentGatewayResult;
 }

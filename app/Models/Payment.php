@@ -12,6 +12,7 @@ final class Payment extends Model
 
     protected $fillable = [
         'reservation_id',
+        'mercado_pago_account_id',
         'amount',
         'method',
         'status',
@@ -31,7 +32,17 @@ final class Payment extends Model
 
     public function reservation(): BelongsTo
     {
-        return $this->belongsTo(Reservation::class);
+        return $this->belongsTo(
+            Reservation::class
+        );
+    }
+
+    public function mercadoPagoAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            MercadoPagoAccount::class,
+            'mercado_pago_account_id'
+        );
     }
 
     public function createdByUser(): BelongsTo
