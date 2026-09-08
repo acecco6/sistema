@@ -21,6 +21,7 @@ final class Payment
         private ?string $checkoutUrl,
         private ?int $createdByUserId,
         private ?DateTimeImmutable $paidAt,
+        private ?int $mercadoPagoAccountId = null,
     ) {}
 
     public function getId(): ?int
@@ -31,6 +32,11 @@ final class Payment
     public function getReservationId(): int
     {
         return $this->reservationId;
+    }
+
+    public function getMercadoPagoAccountId(): ?int
+    {
+        return $this->mercadoPagoAccountId;
     }
 
     public function getAmount(): string
@@ -107,8 +113,9 @@ final class Payment
         $this->status = PaymentStatus::REFUNDED;
     }
 
-    public function setProviderPaymentId(string $providerPaymentId): void
-    {
+    public function setProviderPaymentId(
+        string $providerPaymentId
+    ): void {
         $this->providerPaymentId = $providerPaymentId;
     }
 }

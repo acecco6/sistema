@@ -21,27 +21,16 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
     ) {}
 
     public function createCheckout(
-        int $clubId,
+        int $mercadoPagoAccountId,
         string $externalReference,
         string $title,
         string $amount,
         DateTimeImmutable $expiresAt,
         ?string $payerEmail = null,
     ): CheckoutResult {
-        /*
-        |--------------------------------------------------------------------------
-        | Configurar Mercado Pago para el Club
-        |--------------------------------------------------------------------------
-        |
-        | Cada Club tiene su propia cuenta de Mercado Pago vinculada mediante
-        | OAuth.
-        |
-        | Nunca usamos el MERCADO_PAGO_ACCESS_TOKEN global para crear
-        | preferencias de reservas.
-        |
-        */
-
-        $this->configureForClub($clubId);
+        $this->configureForAccount(
+            $mercadoPagoAccountId
+        );
 
         $client = new PreferenceClient();
 
@@ -55,11 +44,13 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
                 ],
             ],
 
-            'external_reference' => $externalReference,
+            'external_reference' =>
+            $externalReference,
 
             'expires' => true,
 
-            'expiration_date_to' => $expiresAt->format(
+            'expiration_date_to' =>
+            $expiresAt->format(
                 DATE_ATOM
             ),
 
@@ -87,7 +78,8 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
         $requestOptions = new RequestOptions();
 
         $requestOptions->setCustomHeaders([
-            'X-Idempotency-Key: ' . $externalReference,
+            'X-Idempotency-Key: '
+                . $externalReference,
         ]);
 
         $preference = $client->create(
@@ -106,29 +98,18 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
 
         return new CheckoutResult(
             preferenceId: (string) $preference->id,
+
             checkoutUrl: (string) $preference->init_point,
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TEMPORAL - Webhook
-    |--------------------------------------------------------------------------
-    |
-    | El webhook actual todavía no sabe a qué Club pertenece el
-    | providerPaymentId antes de consultar Mercado Pago.
-    |
-    | Por eso mantenemos momentáneamente el Access Token global solamente
-    | para este método.
-    |
-    | Este método será migrado en el siguiente paso.
-    |
-    */
-
     public function getPayment(
-        string $providerPaymentId
+        int $mercadoPagoAccountId,
+        string $providerPaymentId,
     ): PaymentGatewayResult {
-        $this->configureGlobalAccessToken();
+        $this->configureForAccount(
+            $mercadoPagoAccountId
+        );
 
         $client = new PaymentClient();
 
@@ -162,6 +143,7 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
 
         return new PaymentGatewayResult(
             providerPaymentId: (string) $payment->id,
+
             status: (string) $payment->status,
 
             externalReference: $payment->external_reference !== null
@@ -183,20 +165,17 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Configuración por Club
-    |--------------------------------------------------------------------------
-    */
-
-    private function configureForClub(int $clubId): void
-    {
+    private function configureForAccount(
+        int $mercadoPagoAccountId
+    ): void {
         $account = $this->mercadoPagoAccounts
-            ->findActiveByClubId($clubId);
+            ->findById(
+                $mercadoPagoAccountId
+            );
 
         if ($account === null) {
             throw new RuntimeException(
-                'El club no tiene una cuenta de Mercado Pago conectada.'
+                'No se encontró la cuenta de Mercado Pago asociada.'
             );
         }
 
@@ -204,33 +183,7 @@ final class MercadoPagoPaymentGateway implements PaymentGateway
 
         if ($accessToken === '') {
             throw new RuntimeException(
-                'La cuenta de Mercado Pago del club no posee un Access Token válido.'
-            );
-        }
-
-        MercadoPagoConfig::setAccessToken(
-            $accessToken
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Configuración global temporal
-    |--------------------------------------------------------------------------
-    |
-    | SOLO utilizada por getPayment() hasta migrar el webhook.
-    |
-    */
-
-    private function configureGlobalAccessToken(): void
-    {
-        $accessToken = config(
-            'services.mercadopago.access_token'
-        );
-
-        if (! $accessToken) {
-            throw new RuntimeException(
-                'Mercado Pago access token no configurado.'
+                'La cuenta de Mercado Pago no posee un Access Token válido.'
             );
         }
 

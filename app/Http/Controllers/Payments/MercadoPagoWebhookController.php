@@ -8,7 +8,6 @@ use App\Application\Payments\Webhooks\WebhookSignatureValidator;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Throwable;
 
 final class MercadoPagoWebhookController extends Controller
 {
@@ -18,24 +17,59 @@ final class MercadoPagoWebhookController extends Controller
         ProcessMercadoPagoWebhookHandler $handler,
     ): JsonResponse {
         /*
-         * PHP transforma ?data.id=... en data_id.
-         */
-        $dataId = $request->query('data_id')
-            ?? $request->input('data.id');
+        |--------------------------------------------------------------------------
+        | Data ID para firma
+        |--------------------------------------------------------------------------
+        */
 
-        $type = $request->query('type')
-            ?? $request->input('type');
+        $dataIdFromQuery =
+            $request->query('data_id')
+            ?? $request->query('data.id');
 
-        $signature = $request->header('x-signature');
-        $requestId = $request->header('x-request-id');
+        $dataIdForSignature =
+            $dataIdFromQuery !== null
+            ? (string) $dataIdFromQuery
+            : '';
+
+        /*
+        |--------------------------------------------------------------------------
+        | ID real del Payment
+        |--------------------------------------------------------------------------
+        */
+
+        $providerPaymentId =
+            $request->query('data_id')
+            ?? $request->query('data.id')
+            ?? $request->input('data.id')
+            ?? $request->input('id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Seller
+        |--------------------------------------------------------------------------
+        |
+        | Mercado Pago define user_id en este webhook como el identificador
+        | del vendedor.
+        |
+        */
+
+        $mercadoPagoUserId =
+            $request->input('user_id');
+
+        $signature =
+            $request->header('x-signature');
+
+        $requestId =
+            $request->header('x-request-id');
 
         if (
-            ! is_string($signature) ||
-            ! is_string($requestId) ||
-            ! is_string($dataId) ||
-            $signature === '' ||
-            $requestId === '' ||
-            $dataId === ''
+            ! is_string($signature)
+            || ! is_string($requestId)
+            || $providerPaymentId === null
+            || $mercadoPagoUserId === null
+            || $signature === ''
+            || $requestId === ''
+            || $providerPaymentId === ''
         ) {
             return $this->errorResponse(
                 'Webhook inválido.',
@@ -43,15 +77,11 @@ final class MercadoPagoWebhookController extends Controller
             );
         }
 
-        /*
-         * Verificamos que la notificación realmente
-         * haya sido enviada por Mercado Pago.
-         */
         if (
             ! $signatureValidator->validate(
                 signature: $signature,
                 requestId: $requestId,
-                dataId: $dataId,
+                dataId: $dataIdForSignature,
             )
         ) {
             return $this->errorResponse(
@@ -60,32 +90,29 @@ final class MercadoPagoWebhookController extends Controller
             );
         }
 
-        /*
-         * Solo procesamos eventos de pagos.
-         */
-        if ($type !== 'payment') {
+        $type = $request->input('type') ?? $request->query('type');
+
+        if (
+            $type !== null
+            && $type !== 'payment'
+        ) {
             return $this->successResponse(
                 message: 'Evento ignorado.',
-                code: 200,
+                code: 200
             );
         }
 
-        try {
-            $handler->handle(
-                new ProcessMercadoPagoWebhookCommand(
-                    providerPaymentId: $dataId,
-                )
-            );
-        } catch (Throwable $th) {
-            return $this->errorResponse(
-                message: 'Error al procesar el webhook.',
-                code: 500,
-            );
-        }
+        $handler->handle(
+            new ProcessMercadoPagoWebhookCommand(
+                providerPaymentId: (string) $providerPaymentId,
+
+                mercadoPagoUserId: (string) $mercadoPagoUserId,
+            )
+        );
 
         return $this->successResponse(
-            message: 'Webhook procesado correctamente.',
-            code: 200,
+            message: 'Webhook recibido correctamente.',
+            code: 200
         );
     }
 }

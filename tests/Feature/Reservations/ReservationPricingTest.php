@@ -42,6 +42,11 @@ final class ReservationPricingTest extends TestCase
             $tipoCourt,
         ] = $this->createScenario();
 
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
         $this->createInterval(
             branchId: $branch->id,
             tipoCourtId: $tipoCourt->id,
@@ -125,6 +130,12 @@ final class ReservationPricingTest extends TestCase
             $court,
             $tipoCourt,
         ] = $this->createScenario();
+
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
 
         $this->createInterval(
             branchId: $branch->id,
@@ -226,6 +237,10 @@ final class ReservationPricingTest extends TestCase
             $tipoCourt,
         ] = $this->createScenario();
 
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
         $this->createInterval(
             branchId: $branch->id,
             tipoCourtId: $tipoCourt->id,
@@ -349,6 +364,10 @@ final class ReservationPricingTest extends TestCase
             $tipoCourt,
         ] = $this->createScenario();
 
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
         /*
          * Para poder reservar 13:30 → 14:30,
          * el intervalo debe permitir comenzar
@@ -474,6 +493,12 @@ final class ReservationPricingTest extends TestCase
             $court,
             $tipoCourt,
         ] = $this->createScenario();
+
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
 
         $this->createInterval(
             branchId: $branch->id,

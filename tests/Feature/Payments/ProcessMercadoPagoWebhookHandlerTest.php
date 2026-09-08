@@ -10,6 +10,7 @@ use App\Domain\Payments\Enums\PaymentStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\MercadoPagoAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -40,12 +41,18 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-001')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         /*
          * Simulamos la respuesta REAL que obtendríamos
@@ -56,7 +63,10 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('123456789')
+            ->with(
+                $mercadoPagoAccount->id,
+                '123456789'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '123456789',
@@ -85,7 +95,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
         $handler->handle(
             new ProcessMercadoPagoWebhookCommand(
-                providerPaymentId: '123456789'
+                providerPaymentId: '123456789',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
             )
         );
 
@@ -142,19 +153,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-IDEMPOTENCIA')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->twice()
-            ->with('987654321')
+            ->with(
+                $mercadoPagoAccount->id,
+                '987654321'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '987654321',
@@ -176,8 +196,9 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         );
 
         $command = new ProcessMercadoPagoWebhookCommand(
-            providerPaymentId: '987654321'
-        );
+                providerPaymentId: '987654321',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
+            );
 
         // Mercado Pago manda el mismo webhook dos veces.
         $handler->handle($command);
@@ -240,19 +261,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->subMinute(),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-EXPIRADO')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('111222333')
+            ->with(
+                $mercadoPagoAccount->id,
+                '111222333'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '111222333',
@@ -275,7 +305,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
         $handler->handle(
             new ProcessMercadoPagoWebhookCommand(
-                providerPaymentId: '111222333'
+                providerPaymentId: '111222333',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
             )
         );
 
@@ -325,19 +356,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-MONTO-INCORRECTO')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('444555666')
+            ->with(
+                $mercadoPagoAccount->id,
+                '444555666'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '444555666',
@@ -361,8 +401,9 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         try {
             $handler->handle(
                 new ProcessMercadoPagoWebhookCommand(
-                    providerPaymentId: '444555666'
-                )
+                providerPaymentId: '444555666',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
+            )
             );
 
             $this->fail(
@@ -411,19 +452,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-MONEDA-INCORRECTA')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('777888999')
+            ->with(
+                $mercadoPagoAccount->id,
+                '777888999'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '777888999',
@@ -449,8 +499,9 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         try {
             $handler->handle(
                 new ProcessMercadoPagoWebhookCommand(
-                    providerPaymentId: '777888999'
-                )
+                providerPaymentId: '777888999',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
+            )
             );
 
             $this->fail(
@@ -500,19 +551,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-REJECTED')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('555666777')
+            ->with(
+                $mercadoPagoAccount->id,
+                '555666777'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '555666777',
@@ -535,7 +595,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
         $handler->handle(
             new ProcessMercadoPagoWebhookCommand(
-                providerPaymentId: '555666777'
+                providerPaymentId: '555666777',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
             )
         );
 
@@ -588,19 +649,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-CANCELLED')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('888999000')
+            ->with(
+                $mercadoPagoAccount->id,
+                '888999000'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '888999000',
@@ -623,7 +693,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
         $handler->handle(
             new ProcessMercadoPagoWebhookCommand(
-                providerPaymentId: '888999000'
+                providerPaymentId: '888999000',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
             )
         );
 
@@ -669,19 +740,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-LOCAL-001')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('999111222')
+            ->with(
+                $mercadoPagoAccount->id,
+                '999111222'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '999111222',
@@ -705,8 +785,9 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
         try {
             $handler->handle(
                 new ProcessMercadoPagoWebhookCommand(
-                    providerPaymentId: '999111222'
-                )
+                providerPaymentId: '999111222',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
+            )
             );
 
             $this->fail(
@@ -756,19 +837,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-REFUNDED')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('222333444')
+            ->with(
+                $mercadoPagoAccount->id,
+                '222333444'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '222333444',
@@ -791,7 +881,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
         $handler->handle(
             new ProcessMercadoPagoWebhookCommand(
-                providerPaymentId: '222333444'
+                providerPaymentId: '222333444',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
             )
         );
 
@@ -844,19 +935,28 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
                 'expires_at' => now()->addMinutes(15),
             ]);
 
+        $mercadoPagoAccount = $this->createMercadoPagoAccountForReservation(
+            $reservation
+        );
+
         $payment = Payment::factory()
             ->forReservation($reservation)
             ->pending()
             ->withAmount('20000.00')
             ->withExternalReference('PAY-TEST-IN-PROCESS')
-            ->createOne();
+            ->createOne([
+                'mercado_pago_account_id' => $mercadoPagoAccount->id,
+            ]);
 
         $gateway = Mockery::mock(PaymentGateway::class);
 
         $gateway
             ->shouldReceive('getPayment')
             ->once()
-            ->with('333444555')
+            ->with(
+                $mercadoPagoAccount->id,
+                '333444555'
+            )
             ->andReturn(
                 new PaymentGatewayResult(
                     providerPaymentId: '333444555',
@@ -879,7 +979,8 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
 
         $handler->handle(
             new ProcessMercadoPagoWebhookCommand(
-                providerPaymentId: '333444555'
+                providerPaymentId: '333444555',
+                mercadoPagoUserId: $mercadoPagoAccount->mercado_pago_user_id,
             )
         );
 
@@ -912,4 +1013,26 @@ final class ProcessMercadoPagoWebhookHandlerTest extends TestCase
             $reservation->expires_at
         );
     }
+
+    private function createMercadoPagoAccountForReservation(
+        Reservation $reservation
+    ): MercadoPagoAccount {
+        $court = \App\Models\Court::query()
+            ->findOrFail($reservation->court_id);
+
+        $branch = \App\Models\Branch::query()
+            ->findOrFail($court->branch_id);
+
+        return MercadoPagoAccount::create([
+            'club_id' => $branch->club_id,
+            'mercado_pago_user_id' => 'TEST-SELLER-' . $branch->club_id,
+            'access_token' => 'TEST-ACCESS-TOKEN',
+            'refresh_token' => 'TEST-REFRESH-TOKEN',
+            'expires_at' => now()->addMonths(6),
+            'public_key' => 'TEST-PUBLIC-KEY',
+            'active' => true,
+            'connected_at' => now(),
+        ]);
+    }
+
 }

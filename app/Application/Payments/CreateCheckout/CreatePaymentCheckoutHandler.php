@@ -11,6 +11,7 @@ use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Payments\Entities\Payment;
 use App\Domain\Payments\Enums\PaymentMethod;
 use App\Domain\Payments\Enums\PaymentStatus;
+use App\Domain\Payments\MercadoPagoAccounts\Repositories\MercadoPagoAccountRepository;
 use App\Domain\Payments\Repositories\PaymentRepository;
 use App\Domain\Payments\Services\ReservationPaymentPolicy;
 use App\Domain\Reservations\Enums\ReservationStatus;
@@ -29,29 +30,20 @@ final class CreatePaymentCheckoutHandler
         private readonly PaymentGateway $paymentGateway,
         private readonly CourtRepository $courtRepository,
         private readonly BranchRepository $branchRepository,
+        private readonly MercadoPagoAccountRepository $mercadoPagoAccounts,
     ) {}
 
     public function __invoke(
         CreatePaymentCheckoutCommand $command
     ): PaymentCheckoutDto {
-        /*
-        |--------------------------------------------------------------------------
-        | 1. Buscar Reservation
-        |--------------------------------------------------------------------------
-        */
-
         $reservation = $this->reservationRepository
-            ->findById($command->reservationId);
+            ->findById(
+                $command->reservationId
+            );
 
         if ($reservation === null) {
             throw new ReservationNotFoundException();
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 2. Validar estado
-        |--------------------------------------------------------------------------
-        */
 
         if (
             $reservation->getStatus()
@@ -61,12 +53,6 @@ final class CreatePaymentCheckoutHandler
                 'Solo se puede generar un checkout para una reserva pendiente.'
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 3. Validar expiración
-        |--------------------------------------------------------------------------
-        */
 
         $expiresAt = $reservation->getExpiresAt();
 
@@ -82,16 +68,6 @@ final class CreatePaymentCheckoutHandler
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | 4. Payment PENDING existente
-        |--------------------------------------------------------------------------
-        |
-        | Si ya generamos un checkout para esta reserva no generamos otra
-        | Preference en Mercado Pago.
-        |
-        */
-
         $existingPayment = $this->paymentRepository
             ->findPendingByReservation(
                 $reservation->getId()
@@ -100,25 +76,18 @@ final class CreatePaymentCheckoutHandler
         if ($existingPayment !== null) {
             return new PaymentCheckoutDto(
                 paymentId: $existingPayment->getId(),
+
                 amount: $existingPayment->getAmount(),
+
                 percentage: $this->paymentPolicy->percentage(),
+
                 checkoutUrl: $existingPayment->getCheckoutUrl(),
+
                 expiresAt: $expiresAt->format(
                     'Y-m-d H:i:s'
                 ),
             );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | 5. Resolver Court
-        |--------------------------------------------------------------------------
-        |
-        | Reservation no tiene club_id directamente.
-        |
-        | Reservation -> Court -> Branch -> Club.
-        |
-        */
 
         $court = $this->courtRepository
             ->findById(
@@ -129,12 +98,6 @@ final class CreatePaymentCheckoutHandler
             throw new CourtNotFoundException();
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | 6. Resolver Branch
-        |--------------------------------------------------------------------------
-        */
-
         $branch = $this->branchRepository
             ->findById(
                 $court->getBranchId()
@@ -144,58 +107,31 @@ final class CreatePaymentCheckoutHandler
             throw new BranchNotFoundException();
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | 7. Resolver Club
-        |--------------------------------------------------------------------------
-        */
+        $mercadoPagoAccount = $this->mercadoPagoAccounts
+            ->findActiveByClubId(
+                $branch->getClubId()
+            );
 
-        $clubId = $branch->getClubId();
-
-        /*
-        |--------------------------------------------------------------------------
-        | 8. Calcular seña
-        |--------------------------------------------------------------------------
-        */
+        if ($mercadoPagoAccount === null) {
+            throw new RuntimeException(
+                'El club no tiene una cuenta de Mercado Pago conectada.'
+            );
+        }
 
         $amount = $this->paymentPolicy
             ->requiredDeposit(
                 $reservation->getTotalPrice()
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | 9. External reference
-        |--------------------------------------------------------------------------
-        */
-
         $externalReference = sprintf(
             'PAY-%s',
             Uuid::uuid4()->toString()
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | 10. Crear Checkout con la cuenta MP del Club
-        |--------------------------------------------------------------------------
-        |
-        | A partir de ahora PaymentGateway recibe clubId.
-        |
-        | MercadoPagoPaymentGateway:
-        |
-        | clubId
-        |   ↓
-        | mercado_pago_accounts
-        |   ↓
-        | access_token OAuth
-        |   ↓
-        | Preference Mercado Pago
-        |
-        */
-
         $checkout = $this->paymentGateway
             ->createCheckout(
-                clubId: $clubId,
+                mercadoPagoAccountId: $mercadoPagoAccount->getId(),
+
                 externalReference: $externalReference,
 
                 title: sprintf(
@@ -204,53 +140,54 @@ final class CreatePaymentCheckoutHandler
                 ),
 
                 amount: $amount,
+
                 expiresAt: $expiresAt,
+
                 payerEmail: $command->payerEmail,
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | 11. Crear Payment local
-        |--------------------------------------------------------------------------
-        */
-
         $payment = new Payment(
             id: null,
-            reservationId: $reservation->getId(),
-            amount: $amount,
-            method: PaymentMethod::MERCADO_PAGO,
-            status: PaymentStatus::PENDING,
-            provider: 'MERCADO_PAGO',
-            providerPreferenceId: $checkout->preferenceId,
-            providerPaymentId: null,
-            externalReference: $externalReference,
-            checkoutUrl: $checkout->checkoutUrl,
-            createdByUserId: null,
-            paidAt: null,
-        );
 
-        /*
-        |--------------------------------------------------------------------------
-        | 12. Persistir Payment
-        |--------------------------------------------------------------------------
-        */
+            reservationId: $reservation->getId(),
+
+            amount: $amount,
+
+            method: PaymentMethod::MERCADO_PAGO,
+
+            status: PaymentStatus::PENDING,
+
+            provider: 'MERCADO_PAGO',
+
+            providerPreferenceId: $checkout->preferenceId,
+
+            providerPaymentId: null,
+
+            externalReference: $externalReference,
+
+            checkoutUrl: $checkout->checkoutUrl,
+
+            createdByUserId: null,
+
+            paidAt: null,
+
+            mercadoPagoAccountId: $mercadoPagoAccount->getId(),
+        );
 
         $payment = $this->paymentRepository
             ->save(
                 $payment
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | 13. Respuesta
-        |--------------------------------------------------------------------------
-        */
-
         return new PaymentCheckoutDto(
             paymentId: $payment->getId(),
+
             amount: $payment->getAmount(),
+
             percentage: $this->paymentPolicy->percentage(),
+
             checkoutUrl: $payment->getCheckoutUrl(),
+
             expiresAt: $expiresAt->format(
                 'Y-m-d H:i:s'
             ),

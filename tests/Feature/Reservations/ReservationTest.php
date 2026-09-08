@@ -163,6 +163,12 @@ final class ReservationTest extends TestCase
             $tipoCourt,
         ] = $this->createCourtScenario();
 
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
+
         $this->createInterval(
             branchId: $branch->id,
             tipoCourtId: $tipoCourt->id,
@@ -218,6 +224,11 @@ final class ReservationTest extends TestCase
             $court,
             $tipoCourt,
         ] = $this->createCourtScenario();
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
 
         $this->createInterval(
             branchId: $branch->id,
@@ -343,6 +354,11 @@ final class ReservationTest extends TestCase
             $court,
             $tipoCourt,
         ] = $this->createCourtScenario();
+
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
 
         $this->createInterval(
             branchId: $branch->id,
@@ -962,6 +978,9 @@ final class ReservationTest extends TestCase
             $tipoCourt,
         ] = $this->createCourtScenario();
 
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
         $branch->update([
             'opening_time' => '08:00:00',
             'closing_time' => '02:00:00',
@@ -1022,6 +1041,11 @@ final class ReservationTest extends TestCase
             $court,
             $tipoCourt,
         ] = $this->createCourtScenario();
+
+        $this->connectMercadoPagoToClub(
+            $club->id
+        );
+
 
         $branch->update([
             'opening_time' => '08:00:00',
