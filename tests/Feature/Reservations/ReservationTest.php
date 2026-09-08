@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Reservations;
 
+use App\Application\Payments\DTOs\CheckoutResult;
+use App\Application\Payments\Gateways\PaymentGateway;
 use App\Domain\Payments\Enums\RefundStatus;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Models\Branch;
@@ -137,6 +139,20 @@ final class ReservationTest extends TestCase
 
     public function test_cliente_autenticado_puede_reservar_para_si_mismo(): void
     {
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         /** @var User $customer */
         $customer = User::factory()->createOne();
 
@@ -181,6 +197,21 @@ final class ReservationTest extends TestCase
 
     public function test_guest_puede_crear_reserva_sin_autenticacion(): void
     {
+
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
@@ -292,6 +323,20 @@ final class ReservationTest extends TestCase
 
     public function test_reserva_cancelada_no_bloquea_disponibilidad(): void
     {
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
@@ -896,6 +941,20 @@ final class ReservationTest extends TestCase
 
     public function test_guest_puede_reservar_cruzando_medianoche_si_la_sucursal_sigue_abierta(): void
     {
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
@@ -942,6 +1001,21 @@ final class ReservationTest extends TestCase
 
     public function test_guest_puede_reservar_despues_de_medianoche_dentro_de_la_jornada_anterior(): void
     {
+
+        $this->mock(
+            PaymentGateway::class,
+            function ($mock) {
+                $mock->shouldReceive('createCheckout')
+                    ->once()
+                    ->andReturn(
+                        new CheckoutResult(
+                            preferenceId: 'TEST-PREFERENCE',
+                            checkoutUrl: 'https://mercadopago.test/checkout',
+                        )
+                    );
+            }
+        );
+
         [
             $club,
             $branch,
