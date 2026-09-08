@@ -11,20 +11,14 @@ class ExpirePendingReservationsJob implements ShouldQueue
 {
     use Queueable;
 
-    public function handle(
-        ReservationRepository $reservations
-    ): void {
-        $expiredReservations = $reservations
-            ->findExpiredPending();
+    public function handle(ReservationRepository $reservations): void
+    {
+        $expiredReservations = $reservations->findExpiredPending();
 
         foreach ($expiredReservations as $reservation) {
             $reservation->expire();
-
             $updated = $reservations->update($reservation);
-
-            ReservationExpired::dispatch(
-                $updated->getId()
-            );
+            ReservationExpired::dispatch($updated->getId());
         }
     }
 }

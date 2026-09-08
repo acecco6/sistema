@@ -27,20 +27,13 @@ final class MercadoPagoOAuthHttpClient implements MercadoPagoOAuthClient
             'services.mercadopago.redirect_uri'
         );
 
-        if (
-            $this->clientId === ''
-            || $this->clientSecret === ''
-            || $this->redirectUri === ''
-        ) {
-            throw new RuntimeException(
-                'Configuración OAuth de Mercado Pago incompleta.'
-            );
+        if ($this->clientId === '' || $this->clientSecret === '' || $this->redirectUri === '') {
+            throw new RuntimeException('Configuración OAuth de Mercado Pago incompleta.');
         }
     }
 
-    public function getAuthorizationUrl(
-        string $state
-    ): string {
+    public function getAuthorizationUrl(string $state): string
+    {
         return 'https://auth.mercadopago.com.ar/authorization?'
             . http_build_query([
                 'client_id' => $this->clientId,
@@ -51,36 +44,27 @@ final class MercadoPagoOAuthHttpClient implements MercadoPagoOAuthClient
             ]);
     }
 
-    public function exchangeAuthorizationCode(
-        string $code,
-        string $state
-    ): MercadoPagoOAuthCredentials {
+    public function exchangeAuthorizationCode(string $code, string $state): MercadoPagoOAuthCredentials
+    {
         $response = Http::asForm()
             ->acceptJson()
             ->post('https://api.mercadopago.com/oauth/token', [
-                'client_id' => config('services.mercadopago.client_id'),
-                'client_secret' => config('services.mercadopago.client_secret'),
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
                 'grant_type' => 'authorization_code',
                 'code' => $code,
-                'redirect_uri' => config('services.mercadopago.redirect_uri'),
+                'redirect_uri' => $this->redirectUri,
             ]);
 
         if ($response->failed()) {
-            $error = $response->json();
-            throw new RuntimeException(
-                'No se pudo obtener el Access Token de Mercado Pago.'
-            );
+            throw new RuntimeException('No se pudo obtener el Access Token de Mercado Pago.');
         }
-        $data = $response->json();
 
-        return $this->mapCredentials(
-            $response->json()
-        );
+        return $this->mapCredentials($response->json());
     }
 
-    public function refreshAccessToken(
-        string $refreshToken
-    ): MercadoPagoOAuthCredentials {
+    public function refreshAccessToken(string $refreshToken): MercadoPagoOAuthCredentials
+    {
         $response = Http::asForm()
             ->acceptJson()
             ->post(
@@ -94,28 +78,16 @@ final class MercadoPagoOAuthHttpClient implements MercadoPagoOAuthClient
             );
 
         if ($response->failed()) {
-            throw new RuntimeException(
-                'No se pudo renovar el Access Token de Mercado Pago.'
-            );
+            throw new RuntimeException('No se pudo renovar el Access Token de Mercado Pago.');
         }
 
-        return $this->mapCredentials(
-            $response->json()
-        );
+        return $this->mapCredentials($response->json());
     }
 
-    private function mapCredentials(
-        array $data
-    ): MercadoPagoOAuthCredentials {
-        if (
-            empty($data['access_token'])
-            || empty($data['refresh_token'])
-            || empty($data['user_id'])
-            || empty($data['expires_in'])
-        ) {
-            throw new RuntimeException(
-                'Mercado Pago devolvió credenciales OAuth incompletas.'
-            );
+    private function mapCredentials(array $data): MercadoPagoOAuthCredentials
+    {
+        if (empty($data['access_token']) || empty($data['refresh_token']) || empty($data['user_id']) || empty($data['expires_in'])) {
+            throw new RuntimeException('Mercado Pago devolvió credenciales OAuth incompletas.');
         }
 
         return new MercadoPagoOAuthCredentials(

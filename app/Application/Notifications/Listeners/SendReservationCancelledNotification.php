@@ -25,36 +25,26 @@ final class SendReservationCancelledNotification implements ShouldQueue
 
     public function handle(ReservationCancelled $event): void
     {
-        $reservation = $this->reservations->findById(
-            $event->reservationId
-        );
+        $reservation = $this->reservations->findById($event->reservationId);
 
         if ($reservation === null) {
-            throw new RuntimeException(
-                "No se encontró la reserva {$event->reservationId}."
-            );
+            throw new RuntimeException("No se encontró la reserva {$event->reservationId}.");
         }
 
         $toEmail = $reservation->getGuestEmail();
 
         if ($toEmail === null && $reservation->getCustomerUserId() !== null) {
-            $user = $this->users->findById(
-                $reservation->getCustomerUserId()
-            );
+            $user = $this->users->findById($reservation->getCustomerUserId());
 
             if ($user === null) {
-                throw new RuntimeException(
-                    "No se encontró el usuario de la reserva {$event->reservationId}."
-                );
+                throw new RuntimeException("No se encontró el usuario de la reserva {$event->reservationId}.");
             }
 
             $toEmail = $user->email()->value();
         }
 
         if ($toEmail === null) {
-            throw new RuntimeException(
-                "La reserva {$event->reservationId} no tiene email."
-            );
+            throw new RuntimeException("La reserva {$event->reservationId} no tiene email.");
         }
 
         $dto = ReservationDto::fromDomain($reservation);
@@ -79,21 +69,14 @@ final class SendReservationCancelledNotification implements ShouldQueue
         );
 
         try {
-            Notification::route('mail', $toEmail)
-                ->notify(
-                    new ReservationCancelledNotification($dto)
-                );
-
+            Notification::route('mail', $toEmail)->notify(new ReservationCancelledNotification($dto));
             $emailLog->markSent();
-
             $this->emailLogs->update($emailLog);
         } catch (Throwable $exception) {
             $emailLog->markFailed(
                 $exception->getMessage()
             );
-
             $this->emailLogs->update($emailLog);
-
             throw $exception;
         }
     }
