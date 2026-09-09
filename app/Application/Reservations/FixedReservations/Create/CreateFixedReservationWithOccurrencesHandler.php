@@ -8,6 +8,7 @@ use App\Application\Reservations\FixedReservations\Validation\FixedReservationSc
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 use DateInterval;
 use DateTimeImmutable;
+use Illuminate\Support\Facades\DB;
 
 final class CreateFixedReservationWithOccurrencesHandler
 {
@@ -31,18 +32,10 @@ final class CreateFixedReservationWithOccurrencesHandler
          * 1. Validamos toda la agenda futura
          * antes de crear la serie.
          */
-        $this->scheduleValidator->validate(
-            command: $command,
-            from: $from,
-            to: $to,
-        );
-
-        /*
-         * 2. Persistimos serie + slots.
-         */
-        $result = $this->createHandler->handle(
-            $command
-        );
+        $result = DB::transaction(function () use ($command, $from, $to) {
+            $this->scheduleValidator->validate(command: $command, from: $from, to: $to);
+            return $this->createHandler->handle($command);
+        }, attempts: 3);
 
         /*
          * 3. Recuperamos la serie.

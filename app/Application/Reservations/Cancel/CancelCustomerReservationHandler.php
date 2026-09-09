@@ -4,6 +4,7 @@ namespace App\Application\Reservations\Cancel;
 
 use App\Application\Reservations\DTOs\ReservationDto;
 use App\Application\Reservations\DTOs\ReservationDtoFactory;
+use App\Application\Customers\Contracts\CustomerRepository;
 use App\Domain\Reservations\Events\ReservationCancelled;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
@@ -13,6 +14,7 @@ final class CancelCustomerReservationHandler
     public function __construct(
         private ReservationRepository $reservations,
         private ReservationDtoFactory $dtoFactory,
+        private CustomerRepository $customers,
     ) {}
 
     public function handle(CancelCustomerReservationCommand $command): ReservationDto
@@ -26,7 +28,7 @@ final class CancelCustomerReservationHandler
          *
          * Para el cliente es simplemente "no encontrada".
          */
-        if ($reservation === null || $reservation->getCustomerUserId() !== $command->customerUserId) {
+        if ($reservation === null || ! $this->belongsToUser($reservation, $command->customerUserId)) {
             throw new ReservationNotFoundException();
         }
 
@@ -40,5 +42,11 @@ final class CancelCustomerReservationHandler
         }
 
         return $this->dtoFactory->create($updated);
+    }
+
+    private function belongsToUser($reservation, int $userId): bool
+    {
+        return $reservation->getCustomerUserId() === $userId
+            || ($reservation->getClubCustomerId() !== null && $this->customers->belongsToUser($reservation->getClubCustomerId(), $userId));
     }
 }

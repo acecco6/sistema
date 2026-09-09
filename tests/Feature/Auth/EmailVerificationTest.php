@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Models\Customer;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -34,6 +35,20 @@ final class EmailVerificationTest extends TestCase
         $url = URL::temporarySignedRoute('verification.verify', now()->addMinutes(30), ['id' => $user->id, 'hash' => sha1($user->email)]);
         $this->getJson($url)->assertOk()->assertJsonPath('data.email_verified', true);
         $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_verification_links_existing_customer_without_account_by_email(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'cliente@ejemplo.com']);
+        $customer = Customer::query()->create([
+            'name' => 'Cliente sin cuenta', 'email' => 'cliente@ejemplo.com',
+            'email_normalized' => 'cliente@ejemplo.com', 'active' => true,
+        ]);
+        $url = URL::temporarySignedRoute('verification.verify', now()->addMinutes(30), ['id' => $user->id, 'hash' => sha1($user->email)]);
+
+        $this->getJson($url)->assertOk();
+
+        $this->assertDatabaseHas('customers', ['id' => $customer->id, 'user_id' => $user->id]);
     }
 
     public function test_authenticated_user_can_resend_verification_email(): void

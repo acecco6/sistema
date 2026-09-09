@@ -67,6 +67,11 @@ interface FixedReservationRepository
         int $id
     ): ?FixedReservationSlot;
 
+    /**
+     * @return array<int, array{starts_on: DateTimeImmutable, ends_on: ?DateTimeImmutable, start_time: string, duration_minutes: int}>
+     */
+    public function findActiveSchedulesForCourtAndDay(int $courtId, int $dayOfWeek): array;
+
     public function saveSlot(
         FixedReservationSlot $slot
     ): FixedReservationSlot;

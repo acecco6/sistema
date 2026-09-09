@@ -11,7 +11,7 @@ Fecha: **09/09/2026**.
 
 ## Reglas
 
-1. Email y teléfono de una persona sin cuenta no son claves globales; no provocan merge automático.
+1. El email normalizado de Customer es único cuando existe. Al verificar una cuenta, se vincula automáticamente al Customer sin cuenta que tenga ese email; el teléfono no se usa para asociar ni fusionar.
 2. Una cuenta solo puede asociarse si verificó su email.
 3. Al reservar autenticado se crea/reutiliza el Customer y su relación con el club.
 4. Un ClubCustomer inactivo no puede recibir reservas nuevas.
@@ -34,4 +34,4 @@ Configurar `APP_URL` con la URL pública correcta y un mailer real (`MAIL_MAILER
 
 ## Compatibilidad
 
-Las APIs previas y payloads `customer_user_id`/`guest_*` siguen disponibles. El frontend nuevo debe migrar a `club_customer_id`. No eliminar las columnas legacy hasta completar el despliegue del frontend, migrar datos y definir ownership para cuentas desvinculadas.
+Las APIs previas y payloads `customer_user_id`/`guest_*` siguen disponibles. El frontend nuevo debe migrar a `club_customer_id`. No eliminar las columnas legacy hasta completar el despliegue del frontend y migrar los datos.

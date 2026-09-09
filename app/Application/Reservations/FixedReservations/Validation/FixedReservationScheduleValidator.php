@@ -12,6 +12,8 @@ use App\Domain\Courts\Exceptions\CourtInactiveException;
 use App\Domain\Courts\Exceptions\CourtNotFoundException;
 use App\Domain\Courts\Repositories\CourtRepository;
 use App\Domain\Reservations\Exceptions\CourtNotAvailableException;
+use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationScheduleConflictException;
+use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
@@ -22,6 +24,7 @@ final class FixedReservationScheduleValidator
         private CourtRepository $courts,
         private BranchRepository $branches,
         private ReservationValidator $reservationValidator,
+        private FixedReservationRepository $fixedReservations,
     ) {}
 
     public function validate(
@@ -30,6 +33,7 @@ final class FixedReservationScheduleValidator
         DateTimeImmutable $to,
     ): void {
         $plannedOccurrences = [];
+        $requestedSlots = [];
 
         foreach ($command->slots as $slot) {
             $court = $this->courts->findById(
@@ -55,6 +59,10 @@ final class FixedReservationScheduleValidator
             if (! $branch->isActive()) {
                 throw new BranchInactiveException();
             }
+
+            $this->validateExistingFixedSchedule($command, $slot);
+            $this->validateRequestedFixedSchedule($slot, $requestedSlots);
+            $requestedSlots[] = $slot;
 
             foreach (
                 $this->occurrenceDates(
@@ -116,6 +124,73 @@ final class FixedReservationScheduleValidator
                 ];
             }
         }
+    }
+
+    /** @param CreateFixedReservationSlotData[] $requestedSlots */
+    private function validateRequestedFixedSchedule(
+        CreateFixedReservationSlotData $candidate,
+        array $requestedSlots,
+    ): void {
+        foreach ($requestedSlots as $existing) {
+            if ($existing->courtId === $candidate->courtId
+                && $existing->dayOfWeek === $candidate->dayOfWeek
+                && $this->timesOverlap($existing->startTime, $existing->durationMinutes, $candidate->startTime, $candidate->durationMinutes)) {
+                throw new FixedReservationScheduleConflictException();
+            }
+        }
+    }
+
+    private function validateExistingFixedSchedule(
+        CreateFixedReservationCommand $command,
+        CreateFixedReservationSlotData $candidate,
+    ): void {
+        foreach ($this->fixedReservations->findActiveSchedulesForCourtAndDay($candidate->courtId, $candidate->dayOfWeek) as $existing) {
+            if (! $this->rangesHaveOccurrenceOnDay(
+                $command->startsOn,
+                $command->endsOn,
+                $existing['starts_on'],
+                $existing['ends_on'],
+                $candidate->dayOfWeek,
+            )) continue;
+
+            if ($this->timesOverlap($existing['start_time'], $existing['duration_minutes'], $candidate->startTime, $candidate->durationMinutes)) {
+                throw new FixedReservationScheduleConflictException();
+            }
+        }
+    }
+
+    private function rangesHaveOccurrenceOnDay(
+        DateTimeImmutable $startsA,
+        ?DateTimeImmutable $endsA,
+        DateTimeImmutable $startsB,
+        ?DateTimeImmutable $endsB,
+        int $dayOfWeek,
+    ): bool {
+        $from = $this->maxDate($startsA->setTime(0, 0), $startsB->setTime(0, 0));
+        $to = match (true) {
+            $endsA === null && $endsB === null => null,
+            $endsA === null => $endsB->setTime(0, 0),
+            $endsB === null => $endsA->setTime(0, 0),
+            default => $this->minDate($endsA->setTime(0, 0), $endsB->setTime(0, 0)),
+        };
+        if ($to !== null && $from > $to) return false;
+
+        $daysUntil = ($dayOfWeek - (int) $from->format('N') + 7) % 7;
+        $firstOccurrence = $from->add(new DateInterval("P{$daysUntil}D"));
+        return $to === null || $firstOccurrence <= $to;
+    }
+
+    private function timesOverlap(string $startA, int $durationA, string $startB, int $durationB): bool
+    {
+        $startMinutesA = $this->timeToMinutes($startA);
+        $startMinutesB = $this->timeToMinutes($startB);
+        return $startMinutesA < $startMinutesB + $durationB && $startMinutesA + $durationA > $startMinutesB;
+    }
+
+    private function timeToMinutes(string $time): int
+    {
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+        return $hours * 60 + $minutes;
     }
 
     /**

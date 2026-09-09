@@ -11,7 +11,7 @@ final class Customer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'email', 'phone', 'active'];
+    protected $fillable = ['user_id', 'name', 'email', 'email_normalized', 'phone', 'active'];
     protected $casts = ['active' => 'boolean'];
 
     public function user(): BelongsTo { return $this->belongsTo(User::class); }

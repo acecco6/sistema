@@ -256,7 +256,10 @@ final class EloquentReservationRepository implements ReservationRepository
     public function findByCustomerUser(int $customerUserId): array
     {
         return EloquentReservation::query()
-            ->where('customer_user_id', $customerUserId)
+            ->where(function ($query) use ($customerUserId) {
+                $query->where('customer_user_id', $customerUserId)
+                    ->orWhereHas('clubCustomer.customer', fn ($customerQuery) => $customerQuery->where('user_id', $customerUserId));
+            })
             ->orderByDesc('starts_at')
             ->get()
             ->map(

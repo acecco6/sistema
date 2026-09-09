@@ -4,10 +4,10 @@ Actualizado: **09/09/2026**. Ninguno de estos puntos es necesario para usar la i
 
 ## Prioridad alta
 
-1. Flujo de “reclamar perfil”: vincular a una cuenta verificada un Customer creado previamente sin cuenta, con confirmación del club y auditoría.
+1. Asociación automática por email verificado: al verificar un User, vincularlo al Customer sin cuenta que tenga el mismo email normalizado. El email de Customer es único cuando existe.
 2. Merge controlado de Customers duplicados: vista previa, traslado de ClubCustomers/reservas y registro del merge. Nunca fusionar automáticamente por email/teléfono.
 3. Recuperación de contraseña (`forgot/reset password`) y revocación de tokens tras cambios sensibles.
-4. Edición/reprogramación de Reservation con recalculo/snapshot de precio y control transaccional de solapamientos.
+4. No implementar reprogramación por ahora: cancelar la Reservation, procesar refund si corresponde y crear una reserva nueva.
 
 ## Prioridad media
 
@@ -29,7 +29,6 @@ Actualizado: **09/09/2026**. Ninguno de estos puntos es necesario para usar la i
 ## Decisiones que requieren definición funcional
 
 - quién puede buscar un Customer global para asociarlo a otro club;
-- quién aprueba el claim de un perfil sin cuenta;
 - política de retención/anonimización de datos personales;
 - si el estado inactivo impide solo nuevas reservas o también pagos/series existentes;
 - estrategia al modificar una reserva fija con occurrences ya generadas.

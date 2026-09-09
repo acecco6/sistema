@@ -673,3 +673,18 @@ Resolución manual          IMPLEMENTADO
 Tests                      PASANDO
 Frontend                   PENDIENTE
 ```
+
+---
+
+# 16. Bloqueo de superposiciones entre series
+
+Al crear una reserva fija, el backend valida el calendario de series activas antes de persistirla. Rechaza con `409` cuando coinciden simultáneamente:
+
+- misma cancha;
+- mismo día de la semana;
+- vigencias con al menos una ocurrencia común;
+- horarios que se superponen.
+
+Ejemplo bloqueado: Juan tiene cancha 1 martes 18:00–19:00; una nueva serie para Lucas incluye cancha 1 martes 18:00–19:00. Aunque la misma solicitud también tenga un slot válido en otra cancha, se rechaza toda la serie.
+
+El mismo horario en canchas distintas sí es válido. La validación se realiza contra las series completas, no solo contra las occurrences ya materializadas en el horizonte de ocho semanas.

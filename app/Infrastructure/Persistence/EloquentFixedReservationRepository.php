@@ -187,6 +187,27 @@ final class EloquentFixedReservationRepository implements FixedReservationReposi
             : null;
     }
 
+    public function findActiveSchedulesForCourtAndDay(int $courtId, int $dayOfWeek): array
+    {
+        return FixedReservationSlotModel::query()
+            ->with('fixedReservation:id,starts_on,ends_on,active')
+            ->where('court_id', $courtId)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('active', true)
+            ->whereHas('fixedReservation', fn ($query) => $query->where('active', true))
+            ->lockForUpdate()
+            ->get()
+            ->map(fn (FixedReservationSlotModel $slot) => [
+                'starts_on' => new DateTimeImmutable($slot->fixedReservation->starts_on->format('Y-m-d')),
+                'ends_on' => $slot->fixedReservation->ends_on !== null
+                    ? new DateTimeImmutable($slot->fixedReservation->ends_on->format('Y-m-d'))
+                    : null,
+                'start_time' => substr((string) $slot->start_time, 0, 5),
+                'duration_minutes' => (int) $slot->duration_minutes,
+            ])
+            ->all();
+    }
+
     public function saveSlot(
         FixedReservationSlot $slot
     ): FixedReservationSlot {
