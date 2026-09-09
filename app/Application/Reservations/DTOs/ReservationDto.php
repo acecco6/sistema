@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\DTOs;
 
 use App\Domain\Reservations\Entities\Reservation;
+use App\Domain\Users\Entities\User;
 
 final readonly class ReservationDto
 {
@@ -27,14 +28,21 @@ final readonly class ReservationDto
 
         public ?string $notes,
         public ?string $cancelledAt,
+        public ?string $customerName = null,
+        public ?string $customerEmail = null,
+        public ?int $fixedReservationSlotId = null,
+        public ?string $recurrenceDate = null,
+        public string $source = 'manual',
     ) {}
 
-    public static function fromDomain(Reservation $reservation): self
+    public static function fromDomain(Reservation $reservation, ?User $customer = null): self
     {
         return new self(
             id: $reservation->getId(),
             courtId: $reservation->getCourtId(),
             customerUserId: $reservation->getCustomerUserId(),
+            customerName: $customer?->name(),
+            customerEmail: $customer?->email()->value(),
             createdByUserId: $reservation->getCreatedByUserId(),
             guestName: $reservation->getGuestName(),
             guestEmail: $reservation->getGuestEmail(),
@@ -46,6 +54,9 @@ final readonly class ReservationDto
             publicToken: $reservation->getPublicToken(),
             notes: $reservation->getNotes(),
             cancelledAt: $reservation->getCancelledAt()?->format('Y-m-d H:i:s'),
+            fixedReservationSlotId: $reservation->getFixedReservationSlotId(),
+            recurrenceDate: $reservation->getRecurrenceDate()?->format('Y-m-d'),
+            source: $reservation->getFixedReservationSlotId() === null ? 'manual' : 'fixed_reservation',
         );
     }
 
@@ -55,6 +66,16 @@ final readonly class ReservationDto
             'id' => $this->id,
             'court_id' => $this->courtId,
             'customer_user_id' => $this->customerUserId,
+            'customer' => $this->customerUserId !== null ? [
+                'id' => $this->customerUserId,
+                'name' => $this->customerName,
+                'email' => $this->customerEmail,
+            ] : null,
+            'guest' => $this->customerUserId === null ? [
+                'name' => $this->guestName,
+                'email' => $this->guestEmail,
+                'phone' => $this->guestPhone,
+            ] : null,
             'created_by_user_id' => $this->createdByUserId,
             'guest_name' => $this->guestName,
             'guest_email' => $this->guestEmail,
@@ -65,6 +86,9 @@ final readonly class ReservationDto
             'status' => $this->status,
             'notes' => $this->notes,
             'cancelled_at' => $this->cancelledAt,
+            'fixed_reservation_slot_id' => $this->fixedReservationSlotId,
+            'recurrence_date' => $this->recurrenceDate,
+            'source' => $this->source,
         ];
     }
 }

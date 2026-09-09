@@ -46,6 +46,7 @@ final class RolePermissionSeeder extends Seeder
                 'club.view',
                 'club.update',
                 'club.mercado_pago.connect',
+                'club.mercado_pago.view',
 
                 // Branches
                 'branch.view',
@@ -55,15 +56,19 @@ final class RolePermissionSeeder extends Seeder
 
                 // Memberships
                 'membership.create',
+                'membership.view',
                 'membership.change_status',
                 'membership.change_role',
                 'membership.change_branch',
+                'user.view',
 
                 // Courts
                 'court.view',
                 'court.create',
                 'court.update',
                 'court.deactivate',
+                'court_interval.view',
+                'court_interval.update',
 
                 // Court Prices
                 'court_price.view',
@@ -102,6 +107,7 @@ final class RolePermissionSeeder extends Seeder
 
                 'refund.view',
                 'refund.complete',
+                'dashboard.view',
             ],
 
 
@@ -122,6 +128,7 @@ final class RolePermissionSeeder extends Seeder
 
                 // Club
                 'club.view',
+                'club.mercado_pago.view',
 
                 // Branches
                 'branch.view',
@@ -130,13 +137,17 @@ final class RolePermissionSeeder extends Seeder
 
                 // Memberships
                 'membership.create',
+                'membership.view',
                 'membership.change_status',
                 'membership.change_branch',
+                'user.view',
 
                 // Courts
                 'court.view',
                 'court.create',
                 'court.update',
+                'court_interval.view',
+                'court_interval.update',
 
                 // Court Prices
                 'court_price.view',
@@ -173,6 +184,7 @@ final class RolePermissionSeeder extends Seeder
 
                 'refund.view',
                 'refund.complete',
+                'dashboard.view',
             ],
 
 
@@ -198,6 +210,8 @@ final class RolePermissionSeeder extends Seeder
 
                 // Courts
                 'court.view',
+                'court_interval.view',
+                'user.view',
 
                 // Pricing
                 'court_price.view',
@@ -222,6 +236,7 @@ final class RolePermissionSeeder extends Seeder
 
 
                 'payment.view',
+                'dashboard.view',
                 // 'reservation.cancel',
                 // 'reservation.confirm',
 

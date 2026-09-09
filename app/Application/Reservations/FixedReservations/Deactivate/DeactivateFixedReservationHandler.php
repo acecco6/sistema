@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\FixedReservations\Deactivate;
 
 use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDto;
+use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDtoFactory;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationNotFoundException;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
@@ -15,6 +16,7 @@ final class DeactivateFixedReservationHandler
     public function __construct(
         private FixedReservationRepository $fixedReservations,
         private ReservationRepository $reservations,
+        private FixedReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(
@@ -79,11 +81,7 @@ final class DeactivateFixedReservationHandler
                         $fixedReservation->getId()
                     );
 
-                return FixedReservationDto::fromDomain(
-                    fixedReservation: $fixedReservation,
-
-                    slots: $slots,
-                );
+                return $this->dtoFactory->create($fixedReservation, $slots);
             },
             attempts: 3,
         );

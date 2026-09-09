@@ -3,12 +3,16 @@
 namespace App\Application\Reservations\Customer;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 
 final class ShowCustomerReservationHandler
 {
-    public function __construct(private ReservationRepository $reservations) {}
+    public function __construct(
+        private ReservationRepository $reservations,
+        private ReservationDtoFactory $dtoFactory,
+    ) {}
 
     public function handle(ShowCustomerReservationQuery $query): ReservationDto
     {
@@ -19,6 +23,6 @@ final class ShowCustomerReservationHandler
             throw new ReservationNotFoundException();
         }
 
-        return ReservationDto::fromDomain($reservation);
+        return $this->dtoFactory->create($reservation);
     }
 }

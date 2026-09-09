@@ -31,6 +31,15 @@ final class EloquentUserRepository implements UserRepository
         return $this->toDomain($eloquentUser);
     }
 
+    public function findByIds(array $ids): array
+    {
+        return EloquentUser::query()
+            ->whereIn('id', array_values(array_unique($ids)))
+            ->get()
+            ->map(fn (EloquentUser $user) => $this->toDomain($user))
+            ->all();
+    }
+
     public function save(DomainUser $user): void
     {
         EloquentUser::updateOrCreate(

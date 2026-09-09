@@ -17,25 +17,17 @@ final class RegisterController extends Controller
     {
         $validated = $request->validated();
 
-        try {
-            $command = new RegisterCommand(
-                $validated['name'],
-                $validated['email'],
-                $validated['password']
-            );
+        $command = new RegisterCommand(
+            $validated['name'],
+            $validated['email'],
+            $validated['password']
+        );
 
-            $handler->handle($command);
+        $handler->handle($command);
 
-            return $this->successResponse(
-                message: 'Usuario registrado exitosamente',
-                code: 201
-            );
-        } catch (\RuntimeException $e) {
-            dd($e);
-            return $this->errorResponse(
-                message: 'Ocurrió un error al registrar el usuario',
-                code: 400
-            );
-        }
+        return $this->successResponse(
+            message: 'Usuario registrado exitosamente',
+            code: 201
+        );
     }
 }

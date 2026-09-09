@@ -3,12 +3,14 @@
 namespace App\Application\Reservations\Collection;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 
 final class GetCourtReservationsHandler
 {
     public function __construct(
         private ReservationRepository $reservations,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(GetCourtReservationsQuery $query): array
@@ -16,6 +18,6 @@ final class GetCourtReservationsHandler
 
         $reservations = $this->reservations->findByCourtAndDate($query->courtId, $query->date);
 
-        return array_map(ReservationDto::fromDomain(...), $reservations);
+        return $this->dtoFactory->createMany($reservations);
     }
 }

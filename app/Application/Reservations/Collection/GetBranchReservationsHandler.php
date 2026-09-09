@@ -5,6 +5,7 @@ namespace App\Application\Reservations\Collection;
 use App\Application\Reservations\DTOs\BranchReservationsDto;
 use App\Application\Reservations\DTOs\CourtReservationsDto;
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
 use App\Domain\Courts\Repositories\CourtRepository;
@@ -16,6 +17,7 @@ final class GetBranchReservationsHandler
         private BranchRepository $branches,
         private CourtRepository $courts,
         private ReservationRepository $reservations,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(GetBranchReservationsQuery $query): BranchReservationsDto
@@ -31,6 +33,10 @@ final class GetBranchReservationsHandler
         $courts = $this->courts->findByBranchId($query->branchId);
 
         $courtsData = [];
+        $reservationDtos = [];
+        foreach ($this->dtoFactory->createMany($reservations) as $reservationDto) {
+            $reservationDtos[$reservationDto->id] = $reservationDto;
+        }
 
         foreach ($courts as $court) {
 
@@ -40,7 +46,7 @@ final class GetBranchReservationsHandler
 
             $reservationsData = [];
             foreach ($reservationsByCourt as $reservation) {
-                $reservationsData[] = ReservationDto::fromDomain($reservation)->toArray();
+                $reservationsData[] = $reservationDtos[$reservation->getId()]->toArray();
             }
 
             $courtsData[] = new CourtReservationsDto(

@@ -58,6 +58,8 @@ final class CheckPermission
             );
         }
 
+        $routeName = $this->canonicalPermissionName($routeName);
+
         /*
      * Rutas de colección
      */
@@ -104,6 +106,8 @@ final class CheckPermission
             'refund' => $this->resolveRefundScope($request),
             'fixed_reservation' => $this->resolveFixedReservationScope($request),
             'fixed_reservation_conflict' => $this->resolveFixedReservationConflictScope($request),
+            'court_interval' => $this->resolveBranchRouteScope($request),
+            'dashboard' => $this->resolveBranchRouteScope($request),
             default => throw new RuntimeException(
                 "No existe un resolver para [{$resource}]."
             ),
@@ -313,9 +317,66 @@ final class CheckPermission
                 $userId
             ),
             'fixed_reservation_conflict' => $this->authorizeFixedReservationConflictCollection($request, $userId),
+            'membership' => $this->authorizeClubScopedCollection($request, $userId, 'membership.view'),
+            'user' => $this->authorizeUserCollection($request, $userId),
             default => throw new RuntimeException(
                 "No existe autorización de colección para [{$resource}]."
             ),
+        };
+    }
+
+    private function authorizeClubScopedCollection(Request $request, int $userId, string $permission): void
+    {
+        $clubId = $request->route('club_id') ?? $request->input('club_id');
+
+        if ($clubId === null) {
+            throw new RuntimeException('No se pudo determinar el club.');
+        }
+
+        $this->authorization->authorizeInClub($userId, (int) $clubId, $permission);
+    }
+
+    private function authorizeUserCollection(Request $request, int $userId): void
+    {
+        $clubId = $request->route('club_id') ?? $request->input('club_id');
+        $branchId = $request->input('branch_id');
+
+        if ($clubId === null) {
+            throw new RuntimeException('No se pudo determinar el club.');
+        }
+
+        $this->authorization->authorize(
+            $userId,
+            (int) $clubId,
+            $branchId !== null ? (int) $branchId : null,
+            'user.view',
+        );
+    }
+
+    private function resolveBranchRouteScope(Request $request): array
+    {
+        $branchId = $request->route('branch_id');
+
+        if ($branchId === null) {
+            throw new RuntimeException('No se pudo determinar la sucursal.');
+        }
+
+        $branch = $this->branches->findById((int) $branchId);
+
+        if ($branch === null) {
+            throw new BranchNotFoundException();
+        }
+
+        return ['clubId' => $branch->getClubId(), 'branchId' => $branch->getId()];
+    }
+
+    private function canonicalPermissionName(string $routeName): string
+    {
+        return match ($routeName) {
+            'membership.change_branch.legacy' => 'membership.change_branch',
+            'fixed_reservation.deactivate.legacy' => 'fixed_reservation.deactivate',
+            'user.collection.legacy' => 'user.collection',
+            default => $routeName,
         };
     }
 

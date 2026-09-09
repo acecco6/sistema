@@ -5,6 +5,7 @@ namespace App\Application\Reservations\Create;
 
 use App\Application\Pricing\Resolver\PriceResolver;
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Application\Reservations\Validation\ReservationValidator;
 use App\Domain\Branches\Exceptions\BranchInactiveException;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
@@ -29,6 +30,7 @@ final class CreateReservationHandler
         private ReservationRepository $reservations,
         private ReservationValidator $validator,
         private PriceResolver $priceResolver,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(CreateReservationCommand $command): ReservationDto
@@ -224,7 +226,7 @@ final class CreateReservationHandler
                     );
                 }
 
-                return ReservationDto::fromDomain($savedReservation);
+                return $this->dtoFactory->create($savedReservation);
             },
 
             /*

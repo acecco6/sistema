@@ -3,12 +3,14 @@
 namespace App\Application\Reservations\FixedReservations\Get;
 
 use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDto;
+use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDtoFactory;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 
 final class GetFixedReservationsHandler
 {
     public function __construct(
         private FixedReservationRepository $fixedReservations,
+        private FixedReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(
@@ -26,10 +28,7 @@ final class GetFixedReservationsHandler
                         $fixedReservation->getId()
                     );
 
-                return FixedReservationDto::fromDomain(
-                    fixedReservation: $fixedReservation,
-                    slots: $slots,
-                );
+                return $this->dtoFactory->create($fixedReservation, $slots);
             },
             $series
         );

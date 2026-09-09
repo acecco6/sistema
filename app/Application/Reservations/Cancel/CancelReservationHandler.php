@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\Cancel;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Payments\Entities\PaymentRefund;
 use App\Domain\Payments\Enums\RefundStatus;
 use App\Domain\Payments\Repositories\PaymentRefundRepository;
@@ -18,6 +19,7 @@ final class CancelReservationHandler
         private ReservationRepository $reservations,
         private PaymentRepository $payments,
         private PaymentRefundRepository $refunds,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(CancelReservationCommand $command): ReservationDto
@@ -64,9 +66,7 @@ final class CancelReservationHandler
                 $updated->getId()
             );
 
-            return ReservationDto::fromDomain(
-                $updated
-            );
+            return $this->dtoFactory->create($updated);
         }, 3);
     }
 

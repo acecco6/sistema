@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\FixedReservations\Create;
 
 use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDto;
+use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDtoFactory;
 use App\Domain\Branches\Exceptions\BranchInactiveException;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
@@ -22,6 +23,7 @@ final class CreateFixedReservationHandler
         private FixedReservationRepository $fixedReservations,
         private CourtRepository $courts,
         private BranchRepository $branches,
+        private FixedReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(
@@ -84,10 +86,7 @@ final class CreateFixedReservationHandler
                         );
                 }
 
-                return FixedReservationDto::fromDomain(
-                    fixedReservation: $fixedReservation,
-                    slots: $savedSlots,
-                );
+                return $this->dtoFactory->create($fixedReservation, $savedSlots);
             },
             attempts: 3,
         );

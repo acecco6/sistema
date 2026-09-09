@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\FixedReservations\Show;
 
 use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDto;
+use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDtoFactory;
 use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationNotFoundException;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 
@@ -10,6 +11,7 @@ final class ShowFixedReservationHandler
 {
     public function __construct(
         private FixedReservationRepository $fixedReservations,
+        private FixedReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(
@@ -29,9 +31,6 @@ final class ShowFixedReservationHandler
                 $fixedReservation->getId()
             );
 
-        return FixedReservationDto::fromDomain(
-            fixedReservation: $fixedReservation,
-            slots: $slots,
-        );
+        return $this->dtoFactory->create($fixedReservation, $slots);
     }
 }
