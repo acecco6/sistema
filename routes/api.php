@@ -1,7 +1,7 @@
 <?php
 
 
-use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController, SendEmailVerificationController, VerifyEmailController};
+use App\Http\Controllers\Auth\{ForgotPasswordController, LoginController, LogoutController, RegisterController, ResetPasswordController, SendEmailVerificationController, VerifyEmailController};
 use App\Http\Controllers\Customers\{ChangeCustomerStatusController, CreateCustomerController, ListCustomersController, ShowCustomerController, UpdateCustomerController};
 use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
 use App\Http\Controllers\Backoffice\{GetCourtIntervalController, GetDashboardController, GetMercadoPagoStatusController, GetRolePermissionsController, GetSessionContextController, ListCourtTypesController, ListMembershipsController, ListRolesController, SearchUsersController, SearchUsersLegacyController, ShowMembershipController, UpdateCourtIntervalController};
@@ -37,6 +37,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class)->name('auth.login');
     Route::post('/register', RegisterController::class)->name('auth.register');
+    Route::post('/forgot-password', ForgotPasswordController::class)->middleware('throttle:6,1')->name('auth.password.forgot');
+    Route::post('/reset-password', ResetPasswordController::class)->middleware('throttle:6,1')->name('auth.password.reset');
     Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 });
