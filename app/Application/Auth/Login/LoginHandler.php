@@ -32,6 +32,9 @@ final class LoginHandler
         if (!$this->hasher->check($command->password, $user->password())) {
             throw new \RuntimeException('Credenciales inválidas.', 401);
         }
+        if (! $user->isEmailVerified()) {
+            throw new \RuntimeException('Debés verificar tu email antes de iniciar sesión.', 403);
+        }
         return $this->tokenGenerator->generate($user->id(), $email->value());
     }
 }

@@ -2,7 +2,9 @@
 
 > Documento de continuidad para retomar el proyecto en futuras conversaciones.
 > Actualizado: **09/09/2026**.
-> Fuente de esta actualización: estado real inspeccionado en `sistema-master(9).zip`, incluyendo Mercado Pago multi-seller, agenda, notifications y reservas fijas.
+> Fuente de esta actualización: esta entrega, incluyendo Customer global, relación multi-club, clientes sin cuenta y verificación de email.
+
+> Decisión vigente: `User` autentica, `Customer` identifica a la persona y `ClubCustomer` representa su relación con cada club. `Membership` se reserva para personal/roles. Las reservas nuevas usan `club_customer_id` y conservan campos anteriores solo por compatibilidad.
 
 ---
 

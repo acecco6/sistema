@@ -269,6 +269,8 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
             'name' => $user->name,
             'email' => $user->email,
             'active' => (bool) $user->active,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'email_verified_at' => $user->email_verified_at?->toISOString(),
         ];
     }
 

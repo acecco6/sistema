@@ -94,3 +94,26 @@ Las heredadas `/branche` y `/desactivate` continúan funcionando con el mismo pe
 ## Scheduler
 
 La generación diaria de reservas fijas se configura con `FIXED_RESERVATIONS_JOB_TIME=00:10`. Después de cambiarla en producción, limpiar la caché de configuración.
+
+## Clientes y cuentas
+
+`User` es la identidad de autenticación; `Customer` es la persona global; `ClubCustomer` es su relación con cada club. Un cliente puede no tener User y un Customer puede estar asociado a varios clubes.
+
+```http
+GET   /api/clubs/{club_id}/customers
+POST  /api/clubs/{club_id}/customers
+GET   /api/clubs/{club_id}/customers/{id}
+PUT   /api/clubs/{club_id}/customers/{id}
+PATCH /api/clubs/{club_id}/customers/{id}/status
+```
+
+La collection admite `search`, `active`, `page` y `per_page`. Las reservas nuevas deben enviar `club_customer_id`; `customer_user_id` queda como compatibilidad.
+
+## Verificación de email
+
+```http
+GET  /api/auth/email/verify/{id}/{hash}           # URL firmada
+POST /api/auth/email/verification-notification    # autenticado
+```
+
+El registro envía la notificación. Un email no verificado recibe `403` al intentar login. `/api/user` y `/api/me/context` incluyen `email_verified` y `email_verified_at`.

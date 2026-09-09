@@ -6,6 +6,7 @@ use App\Domain\Users\Entities\User as DomainUser;
 use App\Domain\Users\Repositories\UserRepository;
 use App\Domain\Users\ValueObjects\Email;
 use App\Models\User as EloquentUser;
+use DateTimeImmutable;
 
 final class EloquentUserRepository implements UserRepository
 {
@@ -60,7 +61,10 @@ final class EloquentUserRepository implements UserRepository
             name: $eloquentUser->name,
             email: new Email($eloquentUser->email),
             password: $eloquentUser->password,
-            active: $eloquentUser->active // (o el campo que tengas en BD)
+            active: $eloquentUser->active,
+            emailVerifiedAt: $eloquentUser->email_verified_at
+                ? new DateTimeImmutable($eloquentUser->email_verified_at->format('Y-m-d H:i:s'))
+                : null,
         );
     }
 }

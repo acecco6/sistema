@@ -136,6 +136,7 @@ final class EloquentReservationRepository implements ReservationRepository
     {
         $eloquentReservation = EloquentReservation::create([
             'court_id' => $reservation->getCourtId(),
+            'club_customer_id' => $reservation->getClubCustomerId(),
             'customer_user_id' => $reservation->getCustomerUserId(),
             'created_by_user_id' => $reservation->getCreatedByUserId(),
             'guest_name' => $reservation->getGuestName(),
@@ -167,6 +168,7 @@ final class EloquentReservationRepository implements ReservationRepository
         }
 
         $eloquentReservation->update([
+            'club_customer_id' => $reservation->getClubCustomerId(),
             'customer_user_id' => $reservation->getCustomerUserId(),
             'created_by_user_id' => $reservation->getCreatedByUserId(),
             'guest_name' => $reservation->getGuestName(),
@@ -356,6 +358,7 @@ final class EloquentReservationRepository implements ReservationRepository
                     $reservation->recurrence_date->format('Y-m-d')
                 )
                 : null,
+            clubCustomerId: $reservation->club_customer_id !== null ? (int) $reservation->club_customer_id : null,
         );
     }
 }

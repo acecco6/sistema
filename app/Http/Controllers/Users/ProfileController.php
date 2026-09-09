@@ -21,6 +21,8 @@ final class ProfileController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'active' => (bool) $user->active,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'email_verified_at' => $user->email_verified_at?->toISOString(),
         ];
 
         return $this->successResponse(

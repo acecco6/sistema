@@ -33,6 +33,7 @@ final readonly class ReservationDto
         public ?int $fixedReservationSlotId = null,
         public ?string $recurrenceDate = null,
         public string $source = 'manual',
+        public ?int $clubCustomerId = null,
     ) {}
 
     public static function fromDomain(Reservation $reservation, ?User $customer = null): self
@@ -57,6 +58,7 @@ final readonly class ReservationDto
             fixedReservationSlotId: $reservation->getFixedReservationSlotId(),
             recurrenceDate: $reservation->getRecurrenceDate()?->format('Y-m-d'),
             source: $reservation->getFixedReservationSlotId() === null ? 'manual' : 'fixed_reservation',
+            clubCustomerId: $reservation->getClubCustomerId(),
         );
     }
 
@@ -66,6 +68,7 @@ final readonly class ReservationDto
             'id' => $this->id,
             'court_id' => $this->courtId,
             'customer_user_id' => $this->customerUserId,
+            'club_customer_id' => $this->clubCustomerId,
             'customer' => $this->customerUserId !== null ? [
                 'id' => $this->customerUserId,
                 'name' => $this->customerName,

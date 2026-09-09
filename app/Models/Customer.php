@@ -4,21 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Club extends Model
+final class Customer extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'active'];
 
-    protected $casts = [
-        'active' => 'boolean',
-    ];
+    protected $fillable = ['user_id', 'name', 'email', 'phone', 'active'];
+    protected $casts = ['active' => 'boolean'];
 
-    public function memberships(): HasMany
-    {
-        return $this->hasMany(Membership::class);
-    }
-
+    public function user(): BelongsTo { return $this->belongsTo(User::class); }
     public function clubCustomers(): HasMany { return $this->hasMany(ClubCustomer::class); }
 }

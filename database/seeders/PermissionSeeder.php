@@ -30,6 +30,11 @@ final class PermissionSeeder extends Seeder
 
             ['name' => 'user.view', 'description' => 'Buscar usuarios para operaciones del club'],
 
+            ['name' => 'customer.view', 'description' => 'Ver clientes del club'],
+            ['name' => 'customer.create', 'description' => 'Agregar clientes al club'],
+            ['name' => 'customer.update', 'description' => 'Actualizar datos de clientes del club'],
+            ['name' => 'customer.change_status', 'description' => 'Activar o desactivar clientes del club'],
+
             ['name' => 'court.view', 'description' => 'Ver una cancha específica'],
             ['name' => 'court.create', 'description' => 'Crear canchas'],
             ['name' => 'court.update', 'description' => 'Modificar canchas'],

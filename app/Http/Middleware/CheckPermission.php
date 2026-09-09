@@ -60,6 +60,13 @@ final class CheckPermission
 
         $routeName = $this->canonicalPermissionName($routeName);
 
+        if (str_starts_with($routeName, 'customer.')) {
+            $clubId = $request->route('club_id');
+            if ($clubId === null) throw new RuntimeException('No se pudo determinar el club.');
+            $this->authorization->authorizeInClub($user->id, (int) $clubId, $routeName);
+            return $next($request);
+        }
+
         /*
      * Rutas de colección
      */
@@ -376,6 +383,7 @@ final class CheckPermission
             'membership.change_branch.legacy' => 'membership.change_branch',
             'fixed_reservation.deactivate.legacy' => 'fixed_reservation.deactivate',
             'user.collection.legacy' => 'user.collection',
+            'customer.collection' => 'customer.view',
             default => $routeName,
         };
     }

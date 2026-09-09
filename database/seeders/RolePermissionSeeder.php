@@ -61,6 +61,10 @@ final class RolePermissionSeeder extends Seeder
                 'membership.change_role',
                 'membership.change_branch',
                 'user.view',
+                'customer.view',
+                'customer.create',
+                'customer.update',
+                'customer.change_status',
 
                 // Courts
                 'court.view',
@@ -141,6 +145,10 @@ final class RolePermissionSeeder extends Seeder
                 'membership.change_status',
                 'membership.change_branch',
                 'user.view',
+                'customer.view',
+                'customer.create',
+                'customer.update',
+                'customer.change_status',
 
                 // Courts
                 'court.view',
@@ -212,6 +220,8 @@ final class RolePermissionSeeder extends Seeder
                 'court.view',
                 'court_interval.view',
                 'user.view',
+                'customer.view',
+                'customer.create',
 
                 // Pricing
                 'court_price.view',

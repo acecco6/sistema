@@ -222,6 +222,8 @@ final class EloquentFixedReservationRepository implements FixedReservationReposi
             'club_id' =>
             $fixedReservation->getClubId(),
 
+            'club_customer_id' => $fixedReservation->getClubCustomerId(),
+
             'customer_user_id' =>
             $fixedReservation->getCustomerUserId(),
 
@@ -309,6 +311,7 @@ final class EloquentFixedReservationRepository implements FixedReservationReposi
             active: (bool) $model->active,
 
             notes: $model->notes,
+            clubCustomerId: $model->club_customer_id !== null ? (int) $model->club_customer_id : null,
         );
     }
 

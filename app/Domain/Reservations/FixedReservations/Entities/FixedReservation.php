@@ -25,6 +25,7 @@ final class FixedReservation
         private bool $active = true,
 
         private ?string $notes = null,
+        private ?int $clubCustomerId = null,
     ) {
         $this->validateCustomer();
         $this->validateDates();
@@ -127,6 +128,8 @@ final class FixedReservation
     {
         return $this->customerUserId;
     }
+
+    public function getClubCustomerId(): ?int { return $this->clubCustomerId; }
 
     public function getGuestName(): ?string
     {

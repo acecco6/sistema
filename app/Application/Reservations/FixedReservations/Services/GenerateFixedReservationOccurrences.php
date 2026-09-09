@@ -146,6 +146,7 @@ final class GenerateFixedReservationOccurrences
                         fixedReservationSlotId: $slot->getId(),
 
                         recurrenceDate: $date,
+                        clubCustomerId: $fixedReservation->getClubCustomerId(),
                     )
                 );
 

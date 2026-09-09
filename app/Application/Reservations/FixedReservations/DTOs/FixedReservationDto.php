@@ -26,6 +26,7 @@ final readonly class FixedReservationDto
         public bool $active,
         public ?string $notes,
         public array $slots,
+        public ?int $clubCustomerId = null,
     ) {}
 
     public static function fromDomain(
@@ -56,6 +57,7 @@ final readonly class FixedReservationDto
                 FixedReservationSlotDto::fromDomain($slot),
                 $slots
             ),
+            clubCustomerId: $fixedReservation->getClubCustomerId(),
         );
     }
 
@@ -65,6 +67,7 @@ final readonly class FixedReservationDto
             'id' => $this->id,
             'club_id' => $this->clubId,
             'customer_user_id' => $this->customerUserId,
+            'club_customer_id' => $this->clubCustomerId,
             'customer' => $this->customerUserId !== null ? [
                 'id' => $this->customerUserId,
                 'name' => $this->customerName,

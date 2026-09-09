@@ -59,6 +59,7 @@ final class CreateFixedReservationController extends Controller
                 notes: $validated['notes'] ?? null,
 
                 slots: $slots,
+                clubCustomerId: isset($validated['club_customer_id']) ? (int) $validated['club_customer_id'] : null,
             )
         );
 

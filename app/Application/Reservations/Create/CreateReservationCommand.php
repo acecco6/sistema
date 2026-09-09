@@ -29,5 +29,6 @@ final readonly class CreateReservationCommand
 
         public ?int $fixedReservationSlotId = null,
         public ?DateTimeImmutable $recurrenceDate = null,
+        public ?int $clubCustomerId = null,
     ) {}
 }

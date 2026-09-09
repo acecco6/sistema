@@ -3,6 +3,7 @@
 namespace App\Domain\Users\Entities;
 
 use App\Domain\Users\ValueObjects\Email;
+use DateTimeImmutable;
 
 final class User
 {
@@ -12,6 +13,7 @@ final class User
         private Email $email,
         private string $password,
         private bool $active,
+        private ?DateTimeImmutable $emailVerifiedAt = null,
     ) {}
 
     public function id(): ?int
@@ -38,6 +40,9 @@ final class User
     {
         return $this->active;
     }
+
+    public function isEmailVerified(): bool { return $this->emailVerifiedAt !== null; }
+    public function emailVerifiedAt(): ?DateTimeImmutable { return $this->emailVerifiedAt; }
 
     public function activate(): void
     {

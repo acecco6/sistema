@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Application\Auth\Contracts\{PasswordHasher, TokenGenerator};
 use App\Application\Backoffice\Contracts\BackofficeQueryRepository;
+use App\Application\Customers\Contracts\CustomerRepository;
 use App\Application\Notifications\Listeners\SendRefundCompletedNotification;
 use App\Application\Notifications\Listeners\SendReservationCancelledNotification;
 use App\Application\Notifications\Listeners\SendReservationConfirmedNotification;
@@ -45,6 +46,7 @@ use App\Infrastructure\Persistence\EloquentMercadoPagoAccountRepository;
 use App\Infrastructure\Persistence\EloquentPaymentRefundRepository;
 use App\Infrastructure\Persistence\EloquentPaymentRepository;
 use App\Infrastructure\Persistence\EloquentBackofficeQueryRepository;
+use App\Infrastructure\Persistence\EloquentCustomerRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -83,6 +85,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FixedReservationRepository::class, EloquentFixedReservationRepository::class);
         $this->app->bind(FixedReservationConflictRepository::class, EloquentFixedReservationConflictRepository::class,);
         $this->app->bind(BackofficeQueryRepository::class, EloquentBackofficeQueryRepository::class);
+        $this->app->bind(CustomerRepository::class, EloquentCustomerRepository::class);
     }
 
     /**

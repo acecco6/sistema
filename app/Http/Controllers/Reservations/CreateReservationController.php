@@ -14,7 +14,7 @@ final class CreateReservationController extends Controller
     public function __invoke(int $court_id, CreateReservationRequest $request, CreateReservationHandler $handler,): JsonResponse
     {
         $validated = $request->validated();
-        if ($validated['customer_user_id'] !== null) {
+        if (($validated['customer_user_id'] ?? null) !== null || ($validated['club_customer_id'] ?? null) !== null) {
             $validated['guest_name'] = null;
             $validated['guest_email'] = null;
             $validated['guest_phone'] = null;
@@ -39,6 +39,7 @@ final class CreateReservationController extends Controller
                  * nace confirmada.
                  */
                 confirmed: $validated['confirmed'] ?? false,
+                clubCustomerId: isset($validated['club_customer_id']) ? (int) $validated['club_customer_id'] : null,
             )
         );
 
