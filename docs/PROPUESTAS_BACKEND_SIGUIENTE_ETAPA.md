@@ -6,7 +6,7 @@ Actualizado: **09/09/2026**. Ninguno de estos puntos es necesario para usar la i
 
 1. Asociación automática por email verificado: al verificar un User, vincularlo al Customer sin cuenta que tenga el mismo email normalizado. El email de Customer es único cuando existe.
 2. Merge controlado de Customers duplicados: vista previa, traslado de ClubCustomers/reservas y registro del merge. Nunca fusionar automáticamente por email/teléfono.
-3. Recuperación de contraseña (`forgot/reset password`) y revocación de tokens tras cambios sensibles.
+3. ✅ Recuperación de contraseña (`forgot/reset password`) implementada: enlace de un solo uso, vencimiento de 60 minutos y revocación de todos los tokens Sanctum al restablecer la clave. Como siguientes cambios sensibles, cualquier futura edición de email o contraseña autenticada debe aplicar la misma revocación.
 4. No implementar reprogramación por ahora: cancelar la Reservation, procesar refund si corresponde y crear una reserva nueva.
 
 ## Prioridad media

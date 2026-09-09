@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Application\Auth\Contracts\{PasswordHasher, TokenGenerator};
+use App\Application\Auth\Contracts\{PasswordHasher, PasswordResetBroker, TokenGenerator};
 use App\Application\Backoffice\Contracts\BackofficeQueryRepository;
 use App\Application\Customers\Contracts\CustomerRepository;
 use App\Application\Notifications\Listeners\SendRefundCompletedNotification;
@@ -32,7 +32,7 @@ use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepos
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Domain\Roles\Repositories\RoleRepository;
 use App\Domain\Users\Repositories\UserRepository;
-use App\Infrastructure\Auth\LaravelPasswordHasher;
+use App\Infrastructure\Auth\{LaravelPasswordHasher, LaravelPasswordResetBroker};
 use App\Infrastructure\Auth\Sanctum\SanctumTokenGenerator;
 use App\Infrastructure\Payments\Gateways\MercadoPagoPaymentGateway;
 use App\Infrastructure\Payments\MercadoPago\MercadoPagoOAuthHttpClient;
@@ -50,6 +50,7 @@ use App\Infrastructure\Persistence\EloquentCustomerRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -65,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserRepository::class, EloquentUserRepository::class);
         $this->app->bind(TokenGenerator::class, SanctumTokenGenerator::class);
         $this->app->bind(PasswordHasher::class, LaravelPasswordHasher::class);
+        $this->app->bind(PasswordResetBroker::class, LaravelPasswordResetBroker::class);
         $this->app->bind(ClubRepository::class, EloquentClubRepository::class);
         $this->app->bind(BranchRepository::class, EloquentBranchRepository::class);
         $this->app->bind(RoleRepository::class, EloquentRoleRepository::class);
@@ -93,6 +95,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        ResetPasswordNotification::createUrlUsing(function (object $user, string $token): string {
+            $baseUrl = rtrim((string) config('app.frontend_url'), '/');
+
+            return $baseUrl.'/reset-password?token='.urlencode($token).'&email='.urlencode($user->email);
+        });
+
         Event::listen(ReservationConfirmed::class, SendReservationConfirmedNotification::class);
         Event::listen(ReservationCancelled::class, SendReservationCancelledNotification::class,);
         Event::listen(ReservationExpired::class, SendReservationExpiredNotification::class,);
