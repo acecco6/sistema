@@ -14,6 +14,7 @@ final class Reservation extends Model
 
     protected $fillable = [
         'court_id',
+        'club_customer_id',
         'customer_user_id',
         'created_by_user_id',
         'guest_name',
@@ -48,6 +49,8 @@ final class Reservation extends Model
     {
         return $this->belongsTo(Court::class);
     }
+
+    public function clubCustomer(): BelongsTo { return $this->belongsTo(ClubCustomer::class); }
 
     public function customer(): BelongsTo
     {

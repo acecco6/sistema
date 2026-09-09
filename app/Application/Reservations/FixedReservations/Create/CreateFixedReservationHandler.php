@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\FixedReservations\Create;
 
 use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDto;
+use App\Application\Reservations\FixedReservations\DTOs\FixedReservationDtoFactory;
 use App\Domain\Branches\Exceptions\BranchInactiveException;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
 use App\Domain\Branches\Repositories\BranchRepository;
@@ -15,6 +16,8 @@ use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationCourtOu
 use App\Domain\Reservations\FixedReservations\Exceptions\FixedReservationWithoutSlotsException;
 use App\Domain\Reservations\FixedReservations\Repositories\FixedReservationRepository;
 use Illuminate\Support\Facades\DB;
+use App\Application\Customers\Contracts\CustomerRepository;
+use Illuminate\Validation\ValidationException;
 
 final class CreateFixedReservationHandler
 {
@@ -22,6 +25,8 @@ final class CreateFixedReservationHandler
         private FixedReservationRepository $fixedReservations,
         private CourtRepository $courts,
         private BranchRepository $branches,
+        private FixedReservationDtoFactory $dtoFactory,
+        private CustomerRepository $customers,
     ) {}
 
     public function handle(
@@ -48,22 +53,30 @@ final class CreateFixedReservationHandler
             );
         }
 
+        $clubCustomer = $command->clubCustomerId !== null
+            ? $this->customers->findClubCustomer($command->clubId, $command->clubCustomerId)
+            : ($command->customerUserId !== null ? $this->customers->ensureForVerifiedUser($command->clubId, $command->customerUserId) : null);
+        if ($command->clubCustomerId !== null && $clubCustomer === null) throw ValidationException::withMessages(['club_customer_id' => 'El cliente no pertenece al club.']);
+        if ($clubCustomer !== null && ! $clubCustomer['active']) throw ValidationException::withMessages(['club_customer_id' => 'El cliente está inactivo en este club.']);
+
         return DB::transaction(
-            function () use ($command) {
+            function () use ($command, $clubCustomer) {
+                $customerUserId = $clubCustomer['user_id'] ?? $command->customerUserId;
                 $fixedReservation =
                     $this->fixedReservations->save(
                         new FixedReservation(
                             id: null,
                             clubId: $command->clubId,
-                            customerUserId: $command->customerUserId,
-                            guestName: $command->guestName,
-                            guestEmail: $command->guestEmail,
-                            guestPhone: $command->guestPhone,
+                            customerUserId: $customerUserId,
+                            guestName: $clubCustomer !== null && $customerUserId === null ? $clubCustomer['name'] : $command->guestName,
+                            guestEmail: $clubCustomer !== null && $customerUserId === null ? $clubCustomer['email'] : $command->guestEmail,
+                            guestPhone: $clubCustomer !== null && $customerUserId === null ? $clubCustomer['phone'] : $command->guestPhone,
                             createdByUserId: $command->createdByUserId,
                             startsOn: $command->startsOn,
                             endsOn: $command->endsOn,
                             active: true,
                             notes: $command->notes,
+                            clubCustomerId: $clubCustomer['id'] ?? null,
                         )
                     );
 
@@ -84,10 +97,7 @@ final class CreateFixedReservationHandler
                         );
                 }
 
-                return FixedReservationDto::fromDomain(
-                    fixedReservation: $fixedReservation,
-                    slots: $savedSlots,
-                );
+                return $this->dtoFactory->create($fixedReservation, $savedSlots);
             },
             attempts: 3,
         );

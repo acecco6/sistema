@@ -116,7 +116,7 @@ final class LoginTest extends TestCase
             ]
         );
 
-        $response->assertUnauthorized();
+        $response->assertForbidden();
 
         $this->assertDatabaseCount(
             'personal_access_tokens',

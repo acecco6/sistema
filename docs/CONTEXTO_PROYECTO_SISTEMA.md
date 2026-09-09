@@ -1,8 +1,10 @@
 # Estado del proyecto — Sistema de gestión de clubes
 
 > Documento de continuidad para retomar el proyecto en futuras conversaciones.
-> Actualizado: **08/09/2026**.
-> Fuente de esta actualización: estado real inspeccionado en `sistema-master(9).zip`, incluyendo Mercado Pago multi-seller, agenda, notifications y reservas fijas.
+> Actualizado: **09/09/2026**.
+> Fuente de esta actualización: esta entrega, incluyendo Customer global, relación multi-club, clientes sin cuenta y verificación de email.
+
+> Decisión vigente: `User` autentica, `Customer` identifica a la persona y `ClubCustomer` representa su relación con cada club. `Membership` se reserva para personal/roles. Las reservas nuevas usan `club_customer_id` y conservan campos anteriores solo por compatibilidad.
 
 ---
 
@@ -2401,7 +2403,7 @@ API:
 GET   /clubs/{club_id}/fixed-reservations
 POST  /clubs/{club_id}/fixed-reservations
 GET   /fixed-reservations/{id}
-PATCH /fixed-reservations/{id}/desactivate
+PATCH /fixed-reservations/{id}/deactivate
 
 GET   /clubs/{club_id}/fixed-reservation-conflicts
 PATCH /fixed-reservation-conflicts/{id}/resolve
@@ -2431,6 +2433,8 @@ GenerateFixedReservationOccurrencesJob
 
 registrado en `routes/console.php` con ejecución diaria.
 
+El horario se configura con `FIXED_RESERVATIONS_JOB_TIME` y tiene default `00:10`.
+
 Tests:
 
 ```text
@@ -2447,3 +2451,26 @@ docs/FRONTEND_IMPLEMENTATION.md
 docs/FRONTEND_AI_SKILL.md
 docs/FRONTEND_ROADMAP.md
 ```
+
+---
+
+# ACTUALIZACIÓN 09/09/2026 — APIs PARA EL PANEL
+
+Se agregaron proyecciones de lectura para el frontend mediante handlers y un query repository de backoffice.
+
+```text
+GET /api/me/context
+GET /api/clubs/{club_id}/memberships
+GET /api/memberships/{id}
+GET /api/roles
+GET /api/roles/{id}/permissions
+GET /api/clubs/{club_id}/users
+GET /api/court-types
+GET|PATCH /api/branches/{branch_id}/court-types/{court_type_id}/interval
+GET /api/clubs/{club_id}/mercado-pago
+GET /api/branches/{branch_id}/dashboard
+```
+
+Nuevos permisos: `membership.view`, `user.view`, `court_interval.view`, `court_interval.update`, `club.mercado_pago.view` y `dashboard.view`.
+
+Las respuestas de reservas incorporan `customer`, `guest`, `fixed_reservation_slot_id`, `recurrence_date` y `source`. Ver `docs/BACKEND_APIS_FRONTEND.md`.

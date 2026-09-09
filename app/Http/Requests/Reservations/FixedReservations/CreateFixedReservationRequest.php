@@ -14,18 +14,19 @@ final class CreateFixedReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'club_customer_id' => ['nullable','integer','exists:club_customers,id'],
             'customer_user_id' => [
                 'nullable',
                 'integer',
                 'exists:users,id',
-                'required_without:guest_name',
+                'required_without_all:guest_name,club_customer_id',
             ],
 
             'guest_name' => [
                 'nullable',
                 'string',
                 'max:100',
-                'required_without:customer_user_id',
+                'required_without_all:customer_user_id,club_customer_id',
             ],
 
             'guest_email' => [

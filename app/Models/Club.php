@@ -19,4 +19,6 @@ class Club extends Model
     {
         return $this->hasMany(Membership::class);
     }
+
+    public function clubCustomers(): HasMany { return $this->hasMany(ClubCustomer::class); }
 }

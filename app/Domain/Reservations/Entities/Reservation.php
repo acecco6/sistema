@@ -36,6 +36,7 @@ final class Reservation
 
         private ?int $fixedReservationSlotId = null,
         private ?DateTimeImmutable $recurrenceDate = null,
+        private ?int $clubCustomerId = null,
     ) {
         $this->validateCustomer();
     }
@@ -234,6 +235,8 @@ final class Reservation
     {
         return $this->customerUserId;
     }
+
+    public function getClubCustomerId(): ?int { return $this->clubCustomerId; }
 
     public function getCreatedByUserId(): ?int
     {

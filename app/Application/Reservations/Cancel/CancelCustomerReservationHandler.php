@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\Cancel;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Reservations\Events\ReservationCancelled;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
@@ -11,6 +12,7 @@ final class CancelCustomerReservationHandler
 {
     public function __construct(
         private ReservationRepository $reservations,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(CancelCustomerReservationCommand $command): ReservationDto
@@ -37,6 +39,6 @@ final class CancelCustomerReservationHandler
             ReservationCancelled::dispatch($updated->getId());
         }
 
-        return ReservationDto::fromDomain($updated);
+        return $this->dtoFactory->create($updated);
     }
 }

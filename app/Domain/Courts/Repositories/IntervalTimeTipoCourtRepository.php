@@ -8,4 +8,6 @@ interface IntervalTimeTipoCourtRepository
         int $branchId,
         int $tipoCourtId,
     ): ?int;
+
+    public function updateOrCreate(int $branchId, int $tipoCourtId, int $intervalMinutes): int;
 }

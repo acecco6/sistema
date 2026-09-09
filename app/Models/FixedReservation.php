@@ -13,6 +13,7 @@ final class FixedReservation extends Model
 
     protected $fillable = [
         'club_id',
+        'club_customer_id',
         'customer_user_id',
         'guest_name',
         'guest_email',
@@ -39,6 +40,8 @@ final class FixedReservation extends Model
             Club::class
         );
     }
+
+    public function clubCustomer(): BelongsTo { return $this->belongsTo(ClubCustomer::class); }
 
     public function customer(): BelongsTo
     {

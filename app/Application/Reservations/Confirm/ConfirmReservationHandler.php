@@ -3,6 +3,7 @@
 namespace App\Application\Reservations\Confirm;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Reservations\Exceptions\ReservationNotFoundException;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use App\Domain\Reservations\Events\ReservationConfirmed;
@@ -11,6 +12,7 @@ final class ConfirmReservationHandler
 {
     public function __construct(
         private ReservationRepository $reservations,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     public function handle(
@@ -34,8 +36,6 @@ final class ConfirmReservationHandler
             $updated->getId()
         );
 
-        return ReservationDto::fromDomain(
-            $updated
-        );
+        return $this->dtoFactory->create($updated);
     }
 }

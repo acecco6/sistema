@@ -8,6 +8,8 @@ use App\Application\Auth\Register\RegisterHandler;
 use App\Http\Requests\Auth\RegisterRequest;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 
 
 final class RegisterController extends Controller
@@ -17,25 +19,20 @@ final class RegisterController extends Controller
     {
         $validated = $request->validated();
 
-        try {
-            $command = new RegisterCommand(
-                $validated['name'],
-                $validated['email'],
-                $validated['password']
-            );
+        $command = new RegisterCommand(
+            $validated['name'],
+            $validated['email'],
+            $validated['password']
+        );
 
-            $handler->handle($command);
+        $handler->handle($command);
 
-            return $this->successResponse(
-                message: 'Usuario registrado exitosamente',
-                code: 201
-            );
-        } catch (\RuntimeException $e) {
-            dd($e);
-            return $this->errorResponse(
-                message: 'Ocurrió un error al registrar el usuario',
-                code: 400
-            );
-        }
+        $user = User::query()->where('email', $validated['email'])->firstOrFail();
+        event(new Registered($user));
+
+        return $this->successResponse(
+            message: 'Usuario registrado. Te enviamos un email para verificar la cuenta.',
+            code: 201
+        );
     }
 }

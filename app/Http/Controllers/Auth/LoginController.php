@@ -31,7 +31,7 @@ final class LoginController extends Controller
         } catch (\RuntimeException $e) {
             return $this->errorResponse(
                 message: $e->getMessage(),
-                code: 401
+                code: in_array($e->getCode(), [401, 403], true) ? $e->getCode() : 401
             );
         }
     }

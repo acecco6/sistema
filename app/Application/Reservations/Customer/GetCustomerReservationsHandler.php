@@ -3,12 +3,14 @@
 namespace App\Application\Reservations\Customer;
 
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 
 final class GetCustomerReservationsHandler
 {
     public function __construct(
         private ReservationRepository $reservations,
+        private ReservationDtoFactory $dtoFactory,
     ) {}
 
     /**
@@ -18,6 +20,6 @@ final class GetCustomerReservationsHandler
     {
         $reservations = $this->reservations->findByCustomerUser($query->customerUserId);
 
-        return array_map(ReservationDto::fromDomain(...), $reservations);
+        return $this->dtoFactory->createMany($reservations);
     }
 }

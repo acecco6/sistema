@@ -5,6 +5,7 @@ namespace App\Application\Reservations\Create;
 
 use App\Application\Pricing\Resolver\PriceResolver;
 use App\Application\Reservations\DTOs\ReservationDto;
+use App\Application\Reservations\DTOs\ReservationDtoFactory;
 use App\Application\Reservations\Validation\ReservationValidator;
 use App\Domain\Branches\Exceptions\BranchInactiveException;
 use App\Domain\Branches\Exceptions\BranchNotFoundException;
@@ -20,6 +21,8 @@ use App\Domain\Reservations\Repositories\ReservationRepository;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Application\Customers\Contracts\CustomerRepository;
+use Illuminate\Validation\ValidationException;
 
 final class CreateReservationHandler
 {
@@ -29,6 +32,8 @@ final class CreateReservationHandler
         private ReservationRepository $reservations,
         private ReservationValidator $validator,
         private PriceResolver $priceResolver,
+        private ReservationDtoFactory $dtoFactory,
+        private CustomerRepository $customers,
     ) {}
 
     public function handle(CreateReservationCommand $command): ReservationDto
@@ -76,6 +81,24 @@ final class CreateReservationHandler
                 if (! $branch->isActive()) {
                     throw new BranchInactiveException();
                 }
+
+                $clubCustomer = $command->clubCustomerId !== null
+                    ? $this->customers->findClubCustomer($branch->getClubId(), $command->clubCustomerId)
+                    : ($command->customerUserId !== null
+                        ? $this->customers->ensureForVerifiedUser($branch->getClubId(), $command->customerUserId)
+                        : null);
+
+                if ($command->clubCustomerId !== null && $clubCustomer === null) {
+                    throw ValidationException::withMessages(['club_customer_id' => 'El cliente no pertenece al club de la cancha.']);
+                }
+                if ($clubCustomer !== null && ! $clubCustomer['active']) {
+                    throw ValidationException::withMessages(['club_customer_id' => 'El cliente está inactivo en este club.']);
+                }
+
+                $customerUserId = $clubCustomer['user_id'] ?? $command->customerUserId;
+                $guestName = $clubCustomer !== null && $customerUserId === null ? $clubCustomer['name'] : $command->guestName;
+                $guestEmail = $clubCustomer !== null && $customerUserId === null ? $clubCustomer['email'] : $command->guestEmail;
+                $guestPhone = $clubCustomer !== null && $customerUserId === null ? $clubCustomer['phone'] : $command->guestPhone;
 
 
                 /*
@@ -143,11 +166,11 @@ final class CreateReservationHandler
                 $reservation = new Reservation(
                     id: null,
                     courtId: $command->courtId,
-                    customerUserId: $command->customerUserId,
+                    customerUserId: $customerUserId,
                     createdByUserId: $command->createdByUserId,
-                    guestName: $command->guestName,
-                    guestEmail: $command->guestEmail,
-                    guestPhone: $command->guestPhone,
+                    guestName: $guestName,
+                    guestEmail: $guestEmail,
+                    guestPhone: $guestPhone,
                     startsAt: $command->startsAt,
                     endsAt: $command->endsAt,
                     totalPrice: $reservationPrice->total,
@@ -158,6 +181,7 @@ final class CreateReservationHandler
                     expiresAt: $expiresAt,
                     fixedReservationSlotId: $command->fixedReservationSlotId,
                     recurrenceDate: $command->recurrenceDate,
+                    clubCustomerId: $clubCustomer['id'] ?? null,
                 );
 
 
@@ -168,6 +192,9 @@ final class CreateReservationHandler
                 */
 
                 $savedReservation = $this->reservations->save($reservation);
+                if ($savedReservation->getClubCustomerId() !== null) {
+                    $this->customers->recordReservation($savedReservation->getClubCustomerId(), $savedReservation->getStartsAt()->format('Y-m-d H:i:s'));
+                }
 
 
                 /*
@@ -224,7 +251,7 @@ final class CreateReservationHandler
                     );
                 }
 
-                return ReservationDto::fromDomain($savedReservation);
+                return $this->dtoFactory->create($savedReservation);
             },
 
             /*

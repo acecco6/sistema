@@ -15,9 +15,10 @@ final readonly class ReservationDetailsDto
     public static function fromDomain(
         Reservation $reservation,
         ReservationPaymentSummary $paymentSummary,
+        ?ReservationDto $reservationDto = null,
     ): self {
         return new self(
-            reservation: ReservationDto::fromDomain($reservation),
+            reservation: $reservationDto ?? ReservationDto::fromDomain($reservation),
             paymentSummary: $paymentSummary,
         );
     }

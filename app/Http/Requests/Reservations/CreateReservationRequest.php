@@ -22,6 +22,7 @@ class CreateReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'club_customer_id' => ['nullable','integer','exists:club_customers,id'],
             /*
              * Cliente registrado.
              *
@@ -40,13 +41,13 @@ class CreateReservationRequest extends FormRequest
              * ya valida que exista cliente registrado O guest.
              */
             'guest_name' => [
-                'required_without:customer_user_id',
+                'required_without_all:customer_user_id,club_customer_id',
                 'string',
                 'max:100'
             ],
 
             'guest_email' => [
-                'required_without:customer_user_id',
+                'required_without_all:customer_user_id,club_customer_id',
                 'email',
                 'max:150',
             ],

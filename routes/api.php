@@ -1,8 +1,10 @@
 <?php
 
 
-use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController};
+use App\Http\Controllers\Auth\{LoginController, LogoutController, RegisterController, SendEmailVerificationController, VerifyEmailController};
+use App\Http\Controllers\Customers\{ChangeCustomerStatusController, CreateCustomerController, ListCustomersController, ShowCustomerController, UpdateCustomerController};
 use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
+use App\Http\Controllers\Backoffice\{GetCourtIntervalController, GetDashboardController, GetMercadoPagoStatusController, GetRolePermissionsController, GetSessionContextController, ListCourtTypesController, ListMembershipsController, ListRolesController, SearchUsersController, SearchUsersLegacyController, ShowMembershipController, UpdateCourtIntervalController};
 use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
 use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
 use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
@@ -35,6 +37,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/login', LoginController::class)->name('auth.login');
     Route::post('/register', RegisterController::class)->name('auth.register');
+    Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 });
 
 Route::get('/integrations/mercado-pago/callback', MercadoPagoOAuthCallbackController::class)->name('mercado_pago.oauth.callback');
@@ -69,6 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas de Auth
     Route::prefix('auth')->group(function () {
         Route::post('/logout', LogoutController::class)->name('auth.logout');
+        Route::post('/email/verification-notification', SendEmailVerificationController::class)
+            ->middleware('throttle:6,1')->name('verification.send');
     });
 
 
@@ -76,6 +82,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('/', ProfileController::class)->name('user.view');
     });
+
+    Route::get('me/context', GetSessionContextController::class)->name('session.context');
+
+    Route::get('roles', ListRolesController::class)->name('role.collection');
+    Route::get('roles/{id}/permissions', GetRolePermissionsController::class)->name('role.permissions');
+    Route::get('court-types', ListCourtTypesController::class)->name('court_type.collection');
 
 
     // Rutas de Clubes
@@ -87,6 +99,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('{id}', DesactivateClubController::class)->name('club.deactivate');
 
         Route::post('/{club_id}/mercado-pago/connect', ConnectMercadoPagoController::class)->name('club.mercado_pago.connect');
+        Route::get('/{club_id}/mercado-pago', GetMercadoPagoStatusController::class)->name('club.mercado_pago.view');
+
+        Route::get('/{club_id}/memberships', ListMembershipsController::class)->name('membership.collection');
+        Route::get('/{club_id}/users', SearchUsersController::class)->name('user.collection');
+
+        Route::get('/{club_id}/customers', ListCustomersController::class)->name('customer.collection');
+        Route::post('/{club_id}/customers', CreateCustomerController::class)->name('customer.create');
+        Route::get('/{club_id}/customers/{id}', ShowCustomerController::class)->name('customer.view');
+        Route::put('/{club_id}/customers/{id}', UpdateCustomerController::class)->name('customer.update');
+        Route::patch('/{club_id}/customers/{id}/status', ChangeCustomerStatusController::class)->name('customer.change_status');
 
         // Rutas de Sucursales por Club (Lectura y Creación)
         Route::get('{club_id}/branches', GetBranchController::class)->name('branch.collection');
@@ -103,11 +125,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rutas de Membresias
     Route::prefix('memberships')->middleware('permission')->group(function () {
+        Route::get('{id}', ShowMembershipController::class)->name('membership.view');
         Route::post('', CreateMembershipController::class)->name('membership.create');
         Route::patch('{id}/status', ChangeMembershipStatusController::class)->name('membership.change_status');
         Route::patch('{id}/role', ChangeMembershipRoleController::class)->name('membership.change_role');
-        Route::patch('{id}/branche', ChangeMembershipBranchController::class)->name('membership.change_branch');
+        Route::patch('{id}/branch', ChangeMembershipBranchController::class)->name('membership.change_branch');
+        Route::patch('{id}/branche', ChangeMembershipBranchController::class)->name('membership.change_branch.legacy');
     });
+
+    Route::get('users', SearchUsersLegacyController::class)
+        ->middleware('permission')
+        ->name('user.collection.legacy');
+
+    Route::prefix('branches/{branch_id}/court-types/{court_type_id}/interval')
+        ->middleware('permission')
+        ->group(function () {
+            Route::get('', GetCourtIntervalController::class)->name('court_interval.view');
+            Route::patch('', UpdateCourtIntervalController::class)->name('court_interval.update');
+        });
+
+    Route::get('branches/{branch_id}/dashboard', GetDashboardController::class)
+        ->middleware('permission')
+        ->name('dashboard.view');
 
     // Rutas de Courts (Canchas) por Sucursal (Lectura y Creación)
     Route::prefix('branches/{branch_id}/courts')->middleware('permission')->group(function () {
@@ -170,7 +209,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('fixed-reservations')->middleware('permission')->group(function () {
         Route::get('/{id}', ShowFixedReservationController::class)->name('fixed_reservation.view');
-        Route::patch('/{id}/desactivate', DesactivateFixedReservationController::class)->name('fixed_reservation.deactivate');
+        Route::patch('/{id}/deactivate', DesactivateFixedReservationController::class)->name('fixed_reservation.deactivate');
+        Route::patch('/{id}/desactivate', DesactivateFixedReservationController::class)->name('fixed_reservation.deactivate.legacy');
     });
 
     Route::prefix('fixed-reservation-conflicts')->middleware('permission')->group(function () {

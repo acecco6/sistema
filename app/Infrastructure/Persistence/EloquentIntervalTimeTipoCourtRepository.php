@@ -18,4 +18,14 @@ final class EloquentIntervalTimeTipoCourtRepository implements IntervalTimeTipoC
             ? (int) $interval
             : null;
     }
+
+    public function updateOrCreate(int $branchId, int $tipoCourtId, int $intervalMinutes): int
+    {
+        DB::table('interval_time_tipo_court')->updateOrInsert(
+            ['branch_id' => $branchId, 'tipo_court_id' => $tipoCourtId],
+            ['interval_minutes' => $intervalMinutes, 'updated_at' => now(), 'created_at' => now()],
+        );
+
+        return $intervalMinutes;
+    }
 }

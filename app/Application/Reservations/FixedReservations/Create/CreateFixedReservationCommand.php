@@ -27,5 +27,6 @@ final readonly class CreateFixedReservationCommand
         public ?string $notes,
 
         public array $slots,
+        public ?int $clubCustomerId = null,
     ) {}
 }
