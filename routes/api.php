@@ -1,35 +1,113 @@
 <?php
 
 
-use App\Http\Controllers\Auth\{ForgotPasswordController, LoginController, LogoutController, RegisterController, ResetPasswordController, SendEmailVerificationController, VerifyEmailController};
-use App\Http\Controllers\Customers\{ChangeCustomerStatusController, CreateCustomerController, ListCustomersController, ShowCustomerController, UpdateCustomerController};
-use App\Http\Controllers\Branches\{CreateBranchController, DesactivateBranchController, GetBranchController, ShowBranchController, UpdateBranchController};
-use App\Http\Controllers\Backoffice\{GetCourtIntervalController, GetDashboardController, GetMercadoPagoStatusController, GetRolePermissionsController, GetSessionContextController, ListCourtTypesController, ListMembershipsController, ListRolesController, SearchUsersController, SearchUsersLegacyController, ShowMembershipController, UpdateCourtIntervalController};
-use App\Http\Controllers\Clubs\{CreateClubController, DesactivateClubController, GetClubController, ShowClubController, UpdateClubController};
-use App\Http\Controllers\Courts\{CreateCourtController, DeactivateCourtController, GetCourtController, ShowCourtController, UpdateCourtController};
-use App\Http\Controllers\Memberships\{ChangeMembershipBranchController, ChangeMembershipRoleController, ChangeMembershipStatusController, CreateMembershipController};
-use App\Http\Controllers\Payments\CompleteRefundController;
-use App\Http\Controllers\Payments\CreateRefundController;
-use App\Http\Controllers\Payments\GetRefundController;
-use App\Http\Controllers\Payments\GetReservationPaymentsController;
-use App\Http\Controllers\Payments\ListRefundsController;
-use App\Http\Controllers\Payments\MercadoPagoAccounts\ConnectMercadoPagoController;
-use App\Http\Controllers\Payments\MercadoPagoAccounts\MercadoPagoOAuthCallbackController;
-use App\Http\Controllers\Payments\MercadoPagoWebhookController;
-use App\Http\Controllers\Payments\RegisterManualPaymentController;
-use App\Http\Controllers\Pricing\{ChangeCourtPriceStatusController, ChangeCourtPromotionStatusController, CreateCourtPriceController, CreateCourtPromotionController, GetCourtPriceController, GetCourtPromotionController, ShowCourtPriceController, ShowCourtPromotionController, UpdateCourtPriceController, UpdateCourtPromotionController};
-use App\Http\Controllers\Reservations\{BookCourtAuthenticatedController, BookCourtGuestController, CancelCustomerReservationController, CancelReservationController, ConfirmReservationController, CreateReservationController, GetCourtAvailabilityController, GetCourtReservationsController, GetTipoCourtAvailabilityController, ShowReservationController};
+use App\Http\Controllers\Auth\{
+    ForgotPasswordController,
+    LoginController,
+    LogoutController,
+    RegisterController,
+    ResetPasswordController,
+    SendEmailVerificationController,
+    VerifyEmailController
+};
+use App\Http\Controllers\Customers\{
+    ChangeCustomerStatusController,
+    CreateCustomerController,
+    ListCustomersController,
+    ShowCustomerController,
+    UpdateCustomerController
+};
+use App\Http\Controllers\Branches\{
+    CreateBranchController,
+    DesactivateBranchController,
+    GetBranchController,
+    ShowBranchController,
+    UpdateBranchController
+};
+use App\Http\Controllers\Backoffice\{
+    GetCourtIntervalController,
+    GetDashboardController,
+    GetMercadoPagoStatusController,
+    GetRolePermissionsController,
+    GetSessionContextController,
+    ListCourtTypesController,
+    ListMembershipsController,
+    ListRolesController,
+    SearchUsersController,
+    SearchUsersLegacyController,
+    ShowMembershipController,
+    UpdateCourtIntervalController
+};
+use App\Http\Controllers\Clubs\{
+    CreateClubController,
+    DesactivateClubController,
+    GetClubController,
+    ShowClubController,
+    UpdateClubController
+};
+use App\Http\Controllers\Courts\{
+    CreateCourtController,
+    DeactivateCourtController,
+    GetCourtController,
+    ShowCourtController,
+    UpdateCourtController
+};
+use App\Http\Controllers\Memberships\{
+    ChangeMembershipBranchController,
+    ChangeMembershipRoleController,
+    ChangeMembershipStatusController,
+    CreateMembershipController
+};
+use App\Http\Controllers\Payments\{
+    CompleteRefundController,
+    CreateRefundController,
+    GetRefundController,
+    GetReservationPaymentsController,
+    ListRefundsController,
+    MercadoPagoAccounts\ConnectMercadoPagoController,
+    MercadoPagoAccounts\MercadoPagoOAuthCallbackController,
+    MercadoPagoWebhookController,
+    RegisterManualPaymentController
+};
+use App\Http\Controllers\Pricing\{
+    ChangeCourtPriceStatusController,
+    ChangeCourtPromotionStatusController,
+    CreateCourtPriceController,
+    CreateCourtPromotionController,
+    GetCourtPriceController,
+    GetCourtPromotionController,
+    ShowCourtPriceController,
+    ShowCourtPromotionController,
+    UpdateCourtPriceController,
+    UpdateCourtPromotionController
+};
+use App\Http\Controllers\Reservations\{
+    BookCourtAuthenticatedController,
+    BookCourtGuestController,
+    CancelCustomerReservationController,
+    CancelReservationController,
+    ConfirmReservationController,
+    CreateReservationController,
+    GetCourtAvailabilityController,
+    GetCourtReservationsController,
+    GetTipoCourtAvailabilityController,
+    ShowReservationController
+};
 use App\Http\Controllers\Reservations\CancelGuestReservationController;
-use App\Http\Controllers\Reservations\FixedReservations\CreateFixedReservationController;
-use App\Http\Controllers\Reservations\FixedReservations\DesactivateFixedReservationController;
-use App\Http\Controllers\Reservations\FixedReservations\GetFixedReservationConflictsController;
-use App\Http\Controllers\Reservations\FixedReservations\GetFixedReservationsController;
-use App\Http\Controllers\Reservations\FixedReservations\ResolveFixedReservationConflictController;
-use App\Http\Controllers\Reservations\FixedReservations\ShowFixedReservationController;
-use App\Http\Controllers\Reservations\GetBranchReservationsController;
-use App\Http\Controllers\Reservations\GetCustomerReservationsController;
-use App\Http\Controllers\Reservations\ShowCustomerReservationController;
-use App\Http\Controllers\Reservations\ShowGuestReservationController;
+use App\Http\Controllers\Reservations\FixedReservations\{
+    CreateFixedReservationController,
+    DesactivateFixedReservationController,
+    GetFixedReservationConflictsController,
+    GetFixedReservationsController,
+    ResolveFixedReservationConflictController,
+    ShowFixedReservationController
+};
+use App\Http\Controllers\Reservations\{
+    GetBranchReservationsController,
+    GetCustomerReservationsController,
+    ShowCustomerReservationController,
+    ShowGuestReservationController
+};
 use App\Http\Controllers\Users\ProfileController;
 use Illuminate\Support\Facades\Route;
 

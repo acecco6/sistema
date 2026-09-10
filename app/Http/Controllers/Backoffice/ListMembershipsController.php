@@ -16,7 +16,7 @@ final class ListMembershipsController extends Controller
             'search' => $data['search'] ?? null,
             'branch_id' => $data['branch_id'] ?? null,
             'role_id' => $data['role_id'] ?? null,
-        ], fn ($value) => $value !== null && $value !== '');
+        ], fn($value) => $value !== null && $value !== '');
 
         if (array_key_exists('active', $data)) {
             $filters['active'] = $request->boolean('active');

@@ -28,7 +28,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
                 'club:id,name,active',
                 'branch:id,club_id,name,active',
                 'role:id,name,description',
-                'role.permissions' => fn ($query) => $query
+                'role.permissions' => fn($query) => $query
                     ->where('permissions.active', true)
                     ->orderBy('permissions.name'),
             ])
@@ -40,7 +40,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
             ->get();
 
         $effectivePermissions = $memberships
-            ->flatMap(fn (Membership $membership) => $membership->role->permissions->pluck('name'))
+            ->flatMap(fn(Membership $membership) => $membership->role->permissions->pluck('name'))
             ->unique()
             ->sort()
             ->values()
@@ -48,7 +48,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
 
         return [
             'user' => $this->userData($user),
-            'memberships' => $memberships->map(fn (Membership $membership) => [
+            'memberships' => $memberships->map(fn(Membership $membership) => [
                 ...$this->membershipData($membership),
                 'permissions' => $membership->role->permissions->pluck('name')->values()->all(),
             ])->all(),
@@ -56,28 +56,29 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
         ];
     }
 
-    public function memberships(int $clubId, array $filters, int $page, int $perPage): array
+    public function memberships(int $clubId, array $filters, int $page, int $perPage, bool $listMe = true, ?int $userId): array
     {
         $query = Membership::query()
             ->with(['user:id,name,email,active', 'club:id,name,active', 'branch:id,club_id,name,active', 'role:id,name,description'])
             ->where('club_id', $clubId)
-            ->when(array_key_exists('accessible_branch_ids', $filters), fn (Builder $query) => $query->whereIn('branch_id', $filters['accessible_branch_ids']))
-            ->when(array_key_exists('active', $filters), fn (Builder $query) => $query->where('active', $filters['active']))
-            ->when($filters['branch_id'] ?? null, fn (Builder $query, int $branchId) => $query->where('branch_id', $branchId))
-            ->when($filters['role_id'] ?? null, fn (Builder $query, int $roleId) => $query->where('rol_id', $roleId))
+            ->when(array_key_exists('accessible_branch_ids', $filters), fn(Builder $query) => $query->whereIn('branch_id', $filters['accessible_branch_ids']))
+            ->when(array_key_exists('active', $filters), fn(Builder $query) => $query->where('active', $filters['active']))
+            ->when($filters['branch_id'] ?? null, fn(Builder $query, int $branchId) => $query->where('branch_id', $branchId))
+            ->when($filters['role_id'] ?? null, fn(Builder $query, int $roleId) => $query->where('rol_id', $roleId))
             ->when($filters['search'] ?? null, function (Builder $query, string $search) {
                 $escaped = $this->escapeLike($search);
-                $query->whereHas('user', fn (Builder $userQuery) => $userQuery
+                $query->whereHas('user', fn(Builder $userQuery) => $userQuery
                     ->where('name', 'like', "%{$escaped}%")
                     ->orWhere('email', 'like', "%{$escaped}%"));
             })
+            ->when($listMe === false && $userId !== null, fn(Builder $query) => $query->where('user_id', '!=', $userId))
             ->orderByDesc('active')
             ->orderBy('id');
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         return $this->paginated(
-            $paginator->getCollection()->map(fn (Membership $membership) => $this->membershipData($membership))->all(),
+            $paginator->getCollection()->map(fn(Membership $membership) => $this->membershipData($membership))->all(),
             $paginator->total(),
             $paginator->currentPage(),
             $paginator->perPage(),
@@ -99,7 +100,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
         return Role::query()
             ->orderBy('id')
             ->get(['id', 'name', 'description'])
-            ->map(fn (Role $role) => [
+            ->map(fn(Role $role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'description' => $role->description,
@@ -109,7 +110,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
     public function roleWithPermissions(int $id): ?array
     {
         $role = Role::query()
-            ->with(['permissions' => fn ($query) => $query->orderBy('name')])
+            ->with(['permissions' => fn($query) => $query->orderBy('name')])
             ->find($id);
 
         if ($role === null) {
@@ -120,7 +121,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
             'id' => $role->id,
             'name' => $role->name,
             'description' => $role->description,
-            'permissions' => $role->permissions->map(fn ($permission) => [
+            'permissions' => $role->permissions->map(fn($permission) => [
                 'id' => $permission->id,
                 'name' => $permission->name,
                 'description' => $permission->description,
@@ -135,18 +136,18 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
 
         $query = User::query()
             ->select(['id', 'name', 'email', 'active'])
-            ->when($search !== '', fn (Builder $query) => $query->where(function (Builder $query) use ($escaped) {
+            ->when($search !== '', fn(Builder $query) => $query->where(function (Builder $query) use ($escaped) {
                 $query->where('name', 'like', "%{$escaped}%")
                     ->orWhere('email', 'like', "%{$escaped}%");
             }))
-            ->when($active !== null, fn (Builder $query) => $query->where('active', $active))
+            ->when($active !== null, fn(Builder $query) => $query->where('active', $active))
             ->orderBy('name')
             ->orderBy('id');
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         return $this->paginated(
-            $paginator->getCollection()->map(fn (User $user) => $this->userData($user))->all(),
+            $paginator->getCollection()->map(fn(User $user) => $this->userData($user))->all(),
             $paginator->total(),
             $paginator->currentPage(),
             $paginator->perPage(),
@@ -159,7 +160,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
         return TipoCourt::query()
             ->orderBy('name')
             ->get(['id', 'name', 'description'])
-            ->map(fn (TipoCourt $type) => [
+            ->map(fn(TipoCourt $type) => [
                 'id' => $type->id,
                 'name' => $type->name,
                 'description' => $type->description,
@@ -168,11 +169,11 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
 
     public function dashboard(int $branchId, string $date): array
     {
-        $branch = Branch::query()->withCount(['courts as active_courts_count' => fn (Builder $query) => $query->where('active', true)])->findOrFail($branchId);
+        $branch = Branch::query()->withCount(['courts as active_courts_count' => fn(Builder $query) => $query->where('active', true)])->findOrFail($branchId);
 
         $reservations = Reservation::query()
             ->with(['court:id,branch_id,name', 'customer:id,name,email'])
-            ->whereHas('court', fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->whereHas('court', fn(Builder $query) => $query->where('branch_id', $branchId))
             ->whereDate('starts_at', $date)
             ->orderBy('starts_at')
             ->get();
@@ -184,20 +185,20 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
             ->sum('amount');
 
         $pendingRefundsQuery = PaymentRefund::query()
-            ->whereHas('reservation.court', fn (Builder $query) => $query->where('branch_id', $branchId))
+            ->whereHas('reservation.court', fn(Builder $query) => $query->where('branch_id', $branchId))
             ->where('status', RefundStatus::PENDING->value);
 
         $operatingMinutes = $this->operatingMinutes($branch->opening_time, $branch->closing_time);
         $occupiedMinutes = $reservations
             ->whereIn('status', [ReservationStatus::CONFIRMED, ReservationStatus::COMPLETED])
-            ->sum(fn (Reservation $reservation) => $reservation->starts_at->diffInMinutes($reservation->ends_at));
+            ->sum(fn(Reservation $reservation) => $reservation->starts_at->diffInMinutes($reservation->ends_at));
         $capacityMinutes = $operatingMinutes * (int) $branch->active_courts_count;
 
         $now = now();
         $upcoming = $reservations
-            ->filter(fn (Reservation $reservation) => $reservation->starts_at->greaterThanOrEqualTo($now) && ! in_array($reservation->status, [ReservationStatus::CANCELLED, ReservationStatus::EXPIRED], true))
+            ->filter(fn(Reservation $reservation) => $reservation->starts_at->greaterThanOrEqualTo($now) && ! in_array($reservation->status, [ReservationStatus::CANCELLED, ReservationStatus::EXPIRED], true))
             ->take(10)
-            ->map(fn (Reservation $reservation) => $this->dashboardReservation($reservation))
+            ->map(fn(Reservation $reservation) => $this->dashboardReservation($reservation))
             ->values()
             ->all();
 
@@ -210,7 +211,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
             ],
             'reservations' => [
                 'total' => $reservations->count(),
-                'by_status' => collect(ReservationStatus::cases())->mapWithKeys(fn (ReservationStatus $status) => [
+                'by_status' => collect(ReservationStatus::cases())->mapWithKeys(fn(ReservationStatus $status) => [
                     $status->value => $reservations->where('status', $status)->count(),
                 ])->all(),
             ],
@@ -230,7 +231,7 @@ final class EloquentBackofficeQueryRepository implements BackofficeQueryReposito
             ],
             'unresolved_fixed_reservation_conflicts' => FixedReservationConflict::query()
                 ->where('resolved', false)
-                ->whereHas('court', fn (Builder $query) => $query->where('branch_id', $branchId))
+                ->whereHas('court', fn(Builder $query) => $query->where('branch_id', $branchId))
                 ->count(),
         ];
     }

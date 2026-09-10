@@ -22,21 +22,21 @@ final readonly class ListMembershipsHandler
 
         $authorizedMemberships = array_filter(
             $this->memberships->findActiveForClub($userId, $clubId),
-            fn ($membership) => $this->roles->hasPermissionByName($membership->getRoleId(), 'membership.view'),
+            fn($membership) => $this->roles->hasPermissionByName($membership->getRoleId(), 'membership.view'),
         );
 
         $hasGlobalScope = (bool) array_filter(
             $authorizedMemberships,
-            fn ($membership) => $membership->getBranchId() === null,
+            fn($membership) => $membership->getBranchId() === null,
         );
 
         if (! $hasGlobalScope) {
             $filters['accessible_branch_ids'] = array_values(array_unique(array_map(
-                fn ($membership) => $membership->getBranchId(),
+                fn($membership) => $membership->getBranchId(),
                 $authorizedMemberships,
             )));
         }
 
-        return $this->queries->memberships($clubId, $filters, $page, $perPage);
+        return $this->queries->memberships($clubId, $filters, $page, $perPage, false, $userId);
     }
 }
