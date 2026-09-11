@@ -12,6 +12,7 @@
         "php": "^8.3",
         "laravel-lang/common": "^6.8",
         "laravel/framework": "^13.17",
+        "laravel/reverb": "*",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "mercadopago/dx-php": "^3.16"
@@ -52,7 +53,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fcd34d\" \"php artisan serve\" \"php artisan queue:work --tries=1\" \"php artisan schedule:work\" \"npm run dev\" --names=server,queue,scheduler,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fcd34d,#86efac\" --names=server,queue,scheduler,reverb,vite --kill-others-on-fail \"php artisan serve\" \"php artisan queue:work database --sleep=1 --tries=3 --timeout=90\" \"php artisan schedule:work\" \"php artisan reverb:start\" \"npm run dev\""
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

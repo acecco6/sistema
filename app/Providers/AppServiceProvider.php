@@ -106,7 +106,6 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ReservationExpired::class, SendReservationExpiredNotification::class,);
         Event::listen(RefundCompleted::class, SendRefundCompletedNotification::class,);
 
-
         Route::pattern('id', '[0-9]+');
         Route::pattern('court_id', '[0-9]+');
         Route::pattern('branch_id', '[0-9]+');

@@ -6,7 +6,7 @@ interface BackofficeQueryRepository
 {
     public function sessionContext(int $userId): array;
 
-    public function memberships(int $clubId, array $filters, int $page, int $perPage): array;
+    public function memberships(int $clubId, array $filters, int $page, int $perPage, bool $listMe = true, ?int $userId): array;
 
     public function membership(int $id): ?array;
 
