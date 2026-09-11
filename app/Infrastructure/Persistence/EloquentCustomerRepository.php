@@ -15,16 +15,19 @@ final class EloquentCustomerRepository implements CustomerRepository
     public function paginateForClub(int $clubId, array $filters, int $page, int $perPage): array
     {
         $query = ClubCustomer::query()->with('customer.user:id,email_verified_at')->where('club_id', $clubId)
-            ->when(array_key_exists('active', $filters), fn (Builder $q) => $q->where('active', $filters['active']))
+            ->when(array_key_exists('active', $filters), fn(Builder $q) => $q->where('active', $filters['active']))
             ->when($filters['search'] ?? null, function (Builder $q, string $search) {
                 $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search);
-                $q->whereHas('customer', fn (Builder $c) => $c->where('name', 'like', "%{$escaped}%")
+                $q->whereHas('customer', fn(Builder $c) => $c->where('name', 'like', "%{$escaped}%")
                     ->orWhere('email', 'like', "%{$escaped}%")->orWhere('phone', 'like', "%{$escaped}%"));
             })->orderByDesc('active')->orderByDesc('id');
         $p = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return ['items' => $p->getCollection()->map(fn ($link) => $this->data($link))->all(), 'pagination' => [
-            'current_page' => $p->currentPage(), 'per_page' => $p->perPage(), 'total' => $p->total(), 'last_page' => $p->lastPage(),
+        return ['items' => $p->getCollection()->map(fn($link) => $this->data($link))->all(), 'pagination' => [
+            'current_page' => $p->currentPage(),
+            'per_page' => $p->perPage(),
+            'total' => $p->total(),
+            'last_page' => $p->lastPage(),
         ]];
     }
 
@@ -44,26 +47,38 @@ final class EloquentCustomerRepository implements CustomerRepository
                 }
                 $this->linkVerifiedUser($user->id);
                 $customer = Customer::query()->firstOrCreate(['user_id' => $user->id], [
-                    'name' => $user->name, 'email' => $user->email,
+                    'name' => $user->name,
+                    'email' => $user->email,
                     'email_normalized' => $this->normalizeEmail($user->email),
-                    'phone' => $data['phone'] ?? null, 'active' => true,
+                    'phone' => $data['phone'] ?? null,
+                    'active' => true,
                 ]);
             } elseif (! empty($data['customer_id'])) {
                 $customer = Customer::query()->findOrFail($data['customer_id']);
             } else {
                 $normalizedEmail = $this->normalizeEmail($data['email'] ?? null);
-                $this->ensureEmailIsAvailable($normalizedEmail);
-                $customer = Customer::query()->create([
-                    'name' => $data['name'], 'email' => $data['email'] ?? null, 'email_normalized' => $normalizedEmail,
-                    'phone' => $data['phone'] ?? null, 'active' => true,
-                ]);
+                $customer = $normalizedEmail !== null
+                    ? Customer::query()->where('email_normalized', $normalizedEmail)->lockForUpdate()->first()
+                    : null;
+
+                if ($customer === null) {
+                    $customer = Customer::query()->create([
+                        'name' => $data['name'],
+                        'email' => $data['email'] ?? null,
+                        'email_normalized' => $normalizedEmail,
+                        'phone' => $data['phone'] ?? null,
+                        'active' => true,
+                    ]);
+                }
             }
 
             $link = ClubCustomer::query()->firstOrCreate(['club_id' => $clubId, 'customer_id' => $customer->id], [
-                'active' => true, 'notes' => $data['notes'] ?? null,
+                'active' => true,
+                'notes' => $data['notes'] ?? null,
             ]);
-            if (! $link->wasRecentlyCreated) {
-                throw ValidationException::withMessages(['customer_id' => 'El cliente ya pertenece al club.']);
+
+            if (!$link->wasRecentlyCreated) {
+                throw new \Exception('El cliente ya pertenece al club.');
             }
             return $this->data($link->load('customer.user:id,email_verified_at'));
         });
@@ -104,8 +119,10 @@ final class EloquentCustomerRepository implements CustomerRepository
         $this->linkVerifiedUser($userId);
         $user = User::query()->findOrFail($userId);
         $customer = Customer::query()->firstOrCreate(['user_id' => $userId], [
-            'name' => $user->name, 'email' => $user->email,
-            'email_normalized' => $this->normalizeEmail($user->email), 'active' => true,
+            'name' => $user->name,
+            'email' => $user->email,
+            'email_normalized' => $this->normalizeEmail($user->email),
+            'active' => true,
         ]);
         $link = ClubCustomer::query()->firstOrCreate(['club_id' => $clubId, 'customer_id' => $customer->id], ['active' => true]);
         return $this->data($link->load('customer.user:id,email_verified_at'));
@@ -133,7 +150,7 @@ final class EloquentCustomerRepository implements CustomerRepository
     public function belongsToUser(int $clubCustomerId, int $userId): bool
     {
         return ClubCustomer::query()->whereKey($clubCustomerId)
-            ->whereHas('customer', fn (Builder $query) => $query->where('user_id', $userId))
+            ->whereHas('customer', fn(Builder $query) => $query->where('user_id', $userId))
             ->exists();
     }
 
@@ -149,13 +166,23 @@ final class EloquentCustomerRepository implements CustomerRepository
     private function data(ClubCustomer $link): array
     {
         $customer = $link->customer;
-        return ['id' => $link->id, 'club_id' => $link->club_id, 'customer_id' => $customer->id,
-            'user_id' => $customer->user_id, 'has_account' => $customer->user_id !== null,
+        return [
+            'id' => $link->id,
+            'club_id' => $link->club_id,
+            'customer_id' => $customer->id,
+            'user_id' => $customer->user_id,
+            'has_account' => $customer->user_id !== null,
             'email_verified' => $customer->user?->hasVerifiedEmail() ?? false,
-            'name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone,
-            'active' => (bool) $link->active, 'notes' => $link->notes,
-            'first_reservation_at' => $link->first_reservation_at?->toISOString(), 'last_reservation_at' => $link->last_reservation_at?->toISOString(),
-            'created_at' => $link->created_at?->toISOString(), 'updated_at' => $link->updated_at?->toISOString()];
+            'name' => $customer->name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+            'active' => (bool) $link->active,
+            'notes' => $link->notes,
+            'first_reservation_at' => $link->first_reservation_at?->toISOString(),
+            'last_reservation_at' => $link->last_reservation_at?->toISOString(),
+            'created_at' => $link->created_at?->toISOString(),
+            'updated_at' => $link->updated_at?->toISOString()
+        ];
     }
 
     private function normalizeEmail(?string $email): ?string

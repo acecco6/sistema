@@ -47,6 +47,7 @@ use App\Infrastructure\Persistence\EloquentPaymentRefundRepository;
 use App\Infrastructure\Persistence\EloquentPaymentRepository;
 use App\Infrastructure\Persistence\EloquentBackofficeQueryRepository;
 use App\Infrastructure\Persistence\EloquentCustomerRepository;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -106,6 +107,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ReservationExpired::class, SendReservationExpiredNotification::class,);
         Event::listen(RefundCompleted::class, SendRefundCompletedNotification::class,);
 
+
+        Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
         Route::pattern('id', '[0-9]+');
         Route::pattern('court_id', '[0-9]+');

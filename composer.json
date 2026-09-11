@@ -12,6 +12,7 @@
         "php": "^8.3",
         "laravel-lang/common": "^6.8",
         "laravel/framework": "^13.17",
+        "laravel/reverb": "*",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
         "mercadopago/dx-php": "^3.16"

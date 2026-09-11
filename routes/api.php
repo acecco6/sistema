@@ -45,6 +45,7 @@ use App\Http\Controllers\Clubs\{
     ShowClubController,
     UpdateClubController
 };
+use App\Http\Controllers\Notifications\GetNotificationChannelsController;
 use App\Http\Controllers\Courts\{
     CreateCourtController,
     DeactivateCourtController,
@@ -182,6 +183,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{club_id}/mercado-pago', GetMercadoPagoStatusController::class)->name('club.mercado_pago.view');
 
         Route::get('/{club_id}/memberships', ListMembershipsController::class)->name('membership.collection');
+        Route::get('/{club_id}/notification-channels', GetNotificationChannelsController::class)->withoutMiddleware('permission')->name('club.notification_channels');
         Route::get('/{club_id}/users', SearchUsersController::class)->name('user.collection');
 
         Route::get('/{club_id}/customers', ListCustomersController::class)->name('customer.collection');
@@ -213,20 +215,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('{id}/branche', ChangeMembershipBranchController::class)->name('membership.change_branch.legacy');
     });
 
-    Route::get('users', SearchUsersLegacyController::class)
-        ->middleware('permission')
-        ->name('user.collection.legacy');
+    Route::get('users', SearchUsersLegacyController::class)->middleware('permission')->name('user.collection.legacy');
 
-    Route::prefix('branches/{branch_id}/court-types/{court_type_id}/interval')
-        ->middleware('permission')
-        ->group(function () {
-            Route::get('', GetCourtIntervalController::class)->name('court_interval.view');
-            Route::patch('', UpdateCourtIntervalController::class)->name('court_interval.update');
-        });
+    Route::prefix('branches/{branch_id}/court-types/{court_type_id}/interval')->middleware('permission')->group(function () {
+        Route::get('', GetCourtIntervalController::class)->name('court_interval.view');
+        Route::patch('', UpdateCourtIntervalController::class)->name('court_interval.update');
+    });
 
-    Route::get('branches/{branch_id}/dashboard', GetDashboardController::class)
-        ->middleware('permission')
-        ->name('dashboard.view');
+    Route::get('branches/{branch_id}/dashboard', GetDashboardController::class)->middleware('permission')->name('dashboard.view');
 
     // Rutas de Courts (Canchas) por Sucursal (Lectura y Creación)
     Route::prefix('branches/{branch_id}/courts')->middleware('permission')->group(function () {

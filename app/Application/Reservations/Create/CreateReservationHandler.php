@@ -17,6 +17,7 @@ use App\Domain\Reservations\Entities\Reservation;
 use App\Domain\Reservations\Entities\ReservationPriceSegment;
 use App\Domain\Reservations\Enums\ReservationStatus;
 use App\Domain\Reservations\Events\ReservationConfirmed;
+use App\Events\ReservationCreated;
 use App\Domain\Reservations\Repositories\ReservationRepository;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
@@ -250,6 +251,14 @@ final class CreateReservationHandler
                         $savedReservation->getId()
                     );
                 }
+
+                ReservationCreated::dispatch(
+                    $savedReservation,
+                    $branch->getClubId(),
+                    $branch->getId(),
+                    $court->getName(),
+                    $guestName ?? ($clubCustomer['name'] ?? null)
+                );
 
                 return $this->dtoFactory->create($savedReservation);
             },
