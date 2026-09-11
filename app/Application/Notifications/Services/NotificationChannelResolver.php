@@ -31,7 +31,7 @@ final class NotificationChannelResolver
         }
 
         $hasGlobalMembership = collect($memberships)->contains(
-            fn (Membership $membership) => $membership->getBranchId() === null
+            fn(Membership $membership) => $membership->getBranchId() === null
         );
 
         if ($hasGlobalMembership) {
@@ -39,8 +39,8 @@ final class NotificationChannelResolver
         }
 
         return collect($memberships)
-            ->filter(fn (Membership $membership) => $membership->getBranchId() !== null)
-            ->map(fn (Membership $membership) => "club.{$clubId}.branch.{$membership->getBranchId()}")
+            ->filter(fn(Membership $membership) => $membership->getBranchId() !== null)
+            ->map(fn(Membership $membership) => "club.{$clubId}.branch.{$membership->getBranchId()}")
             ->unique()
             ->values()
             ->all();
@@ -54,7 +54,7 @@ final class NotificationChannelResolver
         $memberships = $this->membershipRepository->findActiveForClub($userId, $clubId);
 
         return collect($memberships)->contains(
-            fn (Membership $membership) => $membership->getBranchId() === null
+            fn(Membership $membership) => $membership->getBranchId() === null
         );
     }
 
@@ -66,7 +66,7 @@ final class NotificationChannelResolver
         $memberships = $this->membershipRepository->findActiveForClub($userId, $clubId);
 
         return collect($memberships)->contains(
-            fn (Membership $membership) => $membership->getBranchId() === null || $membership->getBranchId() === $branchId
+            fn(Membership $membership) => $membership->getBranchId() === null || $membership->getBranchId() === $branchId
         );
     }
 }

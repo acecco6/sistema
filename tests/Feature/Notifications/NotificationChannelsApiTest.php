@@ -74,7 +74,7 @@ describe('NotificationChannelsApi', function () {
             ]);
     });
 
-    test('retorna vacio cuando las membresias del usuario estan inactivas', function () {
+    test('rechaza la consulta cuando el usuario no tiene membresias activas en el club', function () {
         $user = User::factory()->create();
         $club = Club::factory()->create();
 
@@ -87,13 +87,6 @@ describe('NotificationChannelsApi', function () {
 
         $response = $this->getJson("/api/clubs/{$club->id}/notification-channels");
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => true,
-                'data' => [
-                    'club_id' => $club->id,
-                    'channels' => [],
-                ],
-            ]);
+        $response->assertForbidden();
     });
 });

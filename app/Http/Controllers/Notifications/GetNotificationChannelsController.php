@@ -13,11 +13,11 @@ final class GetNotificationChannelsController extends Controller
         private readonly GetNotificationChannels $useCase
     ) {}
 
-    public function __invoke(Request $request, int $clubId): JsonResponse
+    public function __invoke(Request $request, int $club_id): JsonResponse
     {
         $userId = (int) $request->user()->id;
 
-        $result = $this->useCase->handle($userId, $clubId);
+        $result = $this->useCase->handle($userId, $club_id);
 
         return $this->successResponse($result, 'Canales de notificación obtenidos exitosamente.');
     }
